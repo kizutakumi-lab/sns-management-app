@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import PostTagsEditor from "@/components/posts/PostTagsEditor";
 
-const PREDEFINED_TAGS = ["DLE", "カンテレ", "リポスト", "キャンペーン", "画像あり", "動画あり"];
-
+import { Loader2 } from "lucide-react";
 const formatContentWithLinks = (text: string) => {
   if (!text) return null;
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -25,12 +24,60 @@ const formatContentWithLinks = (text: string) => {
   });
 };
 
-export default function PostTableClient({ initialPosts, tweetThumbnails }: { initialPosts: any[], tweetThumbnails: Record<string, React.ReactNode> }) {
+export default function PostTableClient({ initialPosts, tweetThumbnails, predefinedTags = [] }: { initialPosts: any[], tweetThumbnails: Record<string, React.ReactNode>, predefinedTags?: string[] }) {
   const [posts, setPosts] = useState(initialPosts);
   const [sortField, setSortField] = useState<string>("postedAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [availableTags, setAvailableTags] = useState<string[]>(predefinedTags);
+  
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTagInput, setNewTagInput] = useState("");
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingTag, setIsDeletingTag] = useState<string | null>(null);
+
+  const handleAddTag = async () => {
+    if (!newTagInput.trim() || availableTags.includes(newTagInput.trim())) return;
+    setIsAddingTag(true);
+    try {
+      const res = await fetch("/api/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tag: newTagInput.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAvailableTags(data.tags);
+        setNewTagInput("");
+        setIsAddModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to add tag", error);
+    } finally {
+      setIsAddingTag(false);
+    }
+  };
+
+  const handleDeleteTag = async (tag: string) => {
+    setIsDeletingTag(tag);
+    try {
+      const res = await fetch(`/api/tags?tag=${encodeURIComponent(tag)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAvailableTags(data.tags);
+        setFilterTags(filterTags.filter(t => t !== tag));
+      }
+    } catch (error) {
+      console.error("Failed to delete tag", error);
+    } finally {
+      setIsDeletingTag(null);
+    }
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -82,7 +129,7 @@ export default function PostTableClient({ initialPosts, tweetThumbnails }: { ini
           <div className="flex gap-2 items-center flex-wrap">
             <Filter className="w-4 h-4 text-muted-foreground mr-2" />
             <span className="text-sm text-muted-foreground mr-2">タグ絞り込み:</span>
-            {PREDEFINED_TAGS.map(tag => (
+            {availableTags.map(tag => (
               <Badge 
                 key={tag} 
                 variant={filterTags.includes(tag) ? "default" : "outline"}
@@ -92,6 +139,12 @@ export default function PostTableClient({ initialPosts, tweetThumbnails }: { ini
                 {tag}
               </Badge>
             ))}
+            <Button variant="outline" size="sm" className="h-6 px-2 text-xs ml-2" onClick={() => setIsAddModalOpen(true)}>
+              ＋ タグ追加
+            </Button>
+            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-destructive hover:bg-destructive/10" onClick={() => setIsDeleteModalOpen(true)}>
+              ー タグ削除
+            </Button>
             {filterTags.length > 0 && (
               <button 
                 onClick={() => setFilterTags([])}
@@ -205,6 +258,57 @@ export default function PostTableClient({ initialPosts, tweetThumbnails }: { ini
         </table>
 
       </div>
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background p-6 rounded-lg shadow-lg w-[400px]">
+            <h3 className="text-lg font-bold mb-4">新しいタグを追加</h3>
+            <input 
+              type="text" 
+              value={newTagInput}
+              onChange={(e) => setNewTagInput(e.target.value)}
+              placeholder="タグ名を入力..."
+              className="w-full border rounded-md px-3 py-2 mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>キャンセル</Button>
+              <Button onClick={handleAddTag} disabled={!newTagInput.trim() || isAddingTag}>
+                {isAddingTag && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                追加
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background p-6 rounded-lg shadow-lg w-[400px]">
+            <h3 className="text-lg font-bold mb-4">タグを削除</h3>
+            <p className="text-sm text-muted-foreground mb-4">削除したいタグをクリックしてください。</p>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {availableTags.length === 0 && <p className="text-sm">タグがありません</p>}
+              {availableTags.map(tag => (
+                <Badge 
+                  key={tag} 
+                  variant="outline"
+                  className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                  onClick={() => {
+                    if (confirm(`タグ「${tag}」を削除してもよろしいですか？`)) {
+                      handleDeleteTag(tag);
+                    }
+                  }}
+                >
+                  {tag} {isDeletingTag === tag && <Loader2 className="w-3 h-3 ml-1 animate-spin" />}
+                </Badge>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>閉じる</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

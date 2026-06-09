@@ -1,4 +1,4 @@
-import { readJsonFile } from "@/lib/drive";
+import { getCachedPosts, getCachedSnapshots } from "@/lib/cache";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -6,17 +6,14 @@ import { ArrowLeft, MessageSquare, BarChart, Calendar } from "lucide-react";
 
 import PostPerformanceHistory from "@/components/posts/PostPerformanceHistory";
 
-export const revalidate = 0;
-
 export default async function PostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
   let posts = [];
   let snapshots = [];
-  
   try {
-    posts = await readJsonFile("posts.json") || [];
-    snapshots = await readJsonFile("post_snapshots.json") || [];
+    posts = await getCachedPosts();
+    snapshots = await getCachedSnapshots();
   } catch (error) {
     console.error("Failed to load data from drive:", error);
   }

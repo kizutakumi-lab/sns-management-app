@@ -1,9 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Users, FileUp, TrendingUp } from "lucide-react"
-import { readJsonFile } from "@/lib/drive"
+import { getCachedPosts, getCachedSnapshots, getCachedImportLogs } from "@/lib/cache"
 import { cookies } from "next/headers"
-
-export const revalidate = 0; // Disable caching to fetch latest from Drive
 
 export default async function Dashboard() {
   const cookieStore = await cookies();
@@ -14,9 +12,9 @@ export default async function Dashboard() {
   let importLogs = [];
   
   try {
-    posts = await readJsonFile("posts.json") || [];
-    snapshots = await readJsonFile("post_snapshots.json") || [];
-    importLogs = await readJsonFile("import_logs.json") || [];
+    posts = await getCachedPosts();
+    snapshots = await getCachedSnapshots();
+    importLogs = await getCachedImportLogs();
   } catch (error) {
     console.error("Failed to load dashboard data from drive:", error);
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readJsonFile, writeJsonFile } from "@/lib/drive";
+import { revalidatePath } from "next/cache";
 
 export async function POST(request: Request) {
   try {
@@ -114,6 +115,9 @@ export async function POST(request: Request) {
       recordsProcessed: data.length
     });
     await writeJsonFile("import_logs.json", logs);
+
+    // インポートが成功したら、キャッシュを破棄して最新データを反映させる
+    revalidatePath("/", "layout");
 
     return NextResponse.json({ success: true, processed: data.length });
   } catch (error: any) {

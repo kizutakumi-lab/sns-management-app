@@ -1,10 +1,8 @@
-import { readJsonFile } from "@/lib/drive";
+import { getCachedAccounts, getCachedPosts, getCachedSnapshots } from "@/lib/cache";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Building2, BarChart3, Activity } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
-export const revalidate = 0;
 
 export default async function AccountsPage() {
   let accounts = [];
@@ -12,9 +10,9 @@ export default async function AccountsPage() {
   let snapshots = [];
 
   try {
-    accounts = await readJsonFile("accounts.json") || [];
-    posts = await readJsonFile("posts.json") || [];
-    snapshots = await readJsonFile("post_snapshots.json") || [];
+    accounts = await getCachedAccounts();
+    posts = await getCachedPosts();
+    snapshots = await getCachedSnapshots();
   } catch (e) {
     console.error("Failed to load data", e);
   }

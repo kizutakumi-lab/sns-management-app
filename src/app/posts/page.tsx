@@ -1,11 +1,9 @@
-import { readJsonFile } from "@/lib/drive";
+import { getCachedPosts, getCachedSnapshots, getCachedTags } from "@/lib/cache";
 import { Card, CardContent } from "@/components/ui/card";
 import { Image as ImageIcon } from "lucide-react";
 import { getTweet } from "react-tweet/api";
 import PostTableClient from "@/components/posts/PostTableClient";
 import { cookies } from "next/headers";
-
-export const revalidate = 0; // Disable caching to fetch latest from Drive
 
 async function TweetThumbnail({ url }: { url: string }) {
   if (!url) return null;
@@ -46,10 +44,12 @@ export default async function PostsPage() {
 
   let posts = [];
   let snapshots = [];
+  let tags = [];
   
   try {
-    posts = await readJsonFile("posts.json") || [];
-    snapshots = await readJsonFile("post_snapshots.json") || [];
+    posts = await getCachedPosts();
+    snapshots = await getCachedSnapshots();
+    tags = await getCachedTags();
   } catch (error) {
     console.error("Failed to load posts from drive:", error);
   }
@@ -109,7 +109,7 @@ export default async function PostsPage() {
         </div>
       </div>
 
-      <PostTableClient initialPosts={combinedPosts} tweetThumbnails={tweetThumbnails} />
+      <PostTableClient initialPosts={combinedPosts} tweetThumbnails={tweetThumbnails} predefinedTags={tags} />
     </div>
   )
 }
