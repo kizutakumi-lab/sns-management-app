@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       // Deduplicate and process posts
       const newPosts: any[] = [];
       const newSnapshots: any[] = [];
-      const accountsMap = new Map(existingAccounts.map((a: any) => [a.id, a]));
+      const accountsMap = new Map<string, any>(existingAccounts.map((a: any) => [a.id, a]));
       
       const today = new Date().toISOString().split('T')[0];
 

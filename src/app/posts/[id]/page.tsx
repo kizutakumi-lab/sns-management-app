@@ -8,7 +8,7 @@ import PostPerformanceHistory from "@/components/posts/PostPerformanceHistory";
 
 export const revalidate = 0;
 
-export default async function PostDetailPage({ params }: { params: { id: string } }) {
+export default async function PostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   
   let posts = [];

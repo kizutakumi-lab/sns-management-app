@@ -59,13 +59,13 @@ export default async function Dashboard() {
     ? new Date(importLogs[importLogs.length - 1].date).toLocaleDateString('ja-JP') 
     : "未実施";
 
-  const topPosts = posts.map(p => {
+  const topPosts = posts.map((p: any) => {
     const snap = latestSnapshots[p.id] || {};
     return {
       ...p,
       impressions: snap.impressions || 0
     };
-  }).sort((a, b) => b.impressions - a.impressions).slice(0, 5);
+  }).sort((a: any, b: any) => b.impressions - a.impressions).slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -151,7 +151,7 @@ export default async function Dashboard() {
             {topPosts.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-12">データがありません</p>
             ) : (
-              topPosts.map(post => (
+              topPosts.map((post: any) => (
                 <div key={post.id} className="flex items-center justify-between border-b pb-3 last:border-0 last:pb-0">
                   <div className="max-w-[70%]">
                     <p className="text-sm font-medium truncate">{post.content.replace(/\[\[.*?\]\]/g, '') || "メディアのみの投稿"}</p>
