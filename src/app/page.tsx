@@ -2,8 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BarChart3, Users, FileUp, TrendingUp } from "lucide-react"
 import { getCachedPosts, getCachedSnapshots, getCachedImportLogs } from "@/lib/cache"
 import { cookies } from "next/headers"
+import DashboardDatePicker from "@/components/dashboard/DashboardDatePicker"
 
-export default async function Dashboard() {
+export default async function Dashboard(props: { searchParams: Promise<{ from?: string, to?: string }> }) {
+  const searchParams = await props.searchParams;
   const cookieStore = await cookies();
   const selectedAccountId = cookieStore.get('selectedAccountId')?.value || 'all';
 
@@ -22,6 +24,23 @@ export default async function Dashboard() {
   // Filter posts by selected account
   if (selectedAccountId !== 'all') {
     posts = posts.filter((p: any) => p.authorId === selectedAccountId);
+  }
+
+  // Filter posts by date range
+  const fromDate = searchParams.from ? new Date(searchParams.from) : null;
+  const toDate = searchParams.to ? new Date(searchParams.to) : null;
+  // If toDate is selected, include the entire day by adding 23:59:59
+  if (toDate) {
+    toDate.setHours(23, 59, 59, 999);
+  }
+
+  if (fromDate || toDate) {
+    posts = posts.filter((p: any) => {
+      const postDate = new Date(p.postedAt);
+      if (fromDate && postDate < fromDate) return false;
+      if (toDate && postDate > toDate) return false;
+      return true;
+    });
   }
 
   // Calculate metrics
@@ -69,12 +88,20 @@ export default async function Dashboard() {
     <div className="space-y-6">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">ダッシュボード</h2>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-muted-foreground mt-2 mb-6">
           SNSアカウントの運用状況とサマリーを確認できます。
         </p>
+        <DashboardDatePicker />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* 期間テキストの生成 */}
+      <div className="text-sm font-medium text-primary bg-primary/10 px-4 py-2 rounded-md inline-block">
+        {(!searchParams.from && !searchParams.to) 
+          ? "表示期間: 全期間の投稿" 
+          : `表示期間: ${searchParams.from ? searchParams.from.replace(/-/g, '/') : '最初'} 〜 ${searchParams.to ? searchParams.to.replace(/-/g, '/') : '最新'} に投稿されたデータ`}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mt-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">総インプレッション</CardTitle>
@@ -82,8 +109,8 @@ export default async function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalImpressions.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              直近の全投稿合計
+            <p className="text-xs text-muted-foreground mt-1">
+              上記期間の全投稿合計
             </p>
           </CardContent>
         </Card>
@@ -94,8 +121,8 @@ export default async function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{avgEngagementRate}</div>
-            <p className="text-xs text-muted-foreground">
-              直近の全投稿平均
+            <p className="text-xs text-muted-foreground mt-1">
+              上記期間の全投稿平均
             </p>
           </CardContent>
         </Card>
