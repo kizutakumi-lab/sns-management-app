@@ -4,20 +4,42 @@ import { useData } from "@/lib/DataContext"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, Users, LayoutDashboard, TrendingUp } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { useMemo } from "react"
+import { useState, useMemo } from "react"
 
 export default function Dashboard() {
   const { analyzedPosts, summaries } = useData()
+  const [startDate, setStartDate] = useState<string>("")
+  const [endDate, setEndDate] = useState<string>("")
 
-  // 集計指標の計算
-  const totalPosts = analyzedPosts.length;
-  const totalImpressions = analyzedPosts.reduce((sum, p) => sum + p.impressions, 0);
-  const totalOrganicImpressions = analyzedPosts.reduce((sum, p) => sum + p.organicImpressions, 0);
-  const totalPaidImpressions = analyzedPosts.reduce((sum, p) => sum + p.paidImpressions, 0);
-  const totalLikes = analyzedPosts.reduce((sum, p) => sum + p.likes, 0);
+  // 指定された期間で投稿をフィルタリング
+  const filteredPosts = useMemo(() => {
+    return analyzedPosts.filter(p => {
+      const pTime = new Date(p.postTime.replace(/-/g, '/')).getTime();
+      if (isNaN(pTime)) return true;
+
+      if (startDate) {
+        const sTime = new Date(startDate).getTime();
+        if (!isNaN(sTime) && pTime < sTime) return false;
+      }
+      
+      if (endDate) {
+        // 終了日の23:59:59までを含める
+        const eTime = new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
+        if (!isNaN(eTime) && pTime > eTime) return false;
+      }
+      return true;
+    });
+  }, [analyzedPosts, startDate, endDate]);
+
+  // 集計指標の計算（フィルタリング後のデータを使用）
+  const totalPosts = filteredPosts.length;
+  const totalImpressions = filteredPosts.reduce((sum, p) => sum + p.impressions, 0);
+  const totalOrganicImpressions = filteredPosts.reduce((sum, p) => sum + p.organicImpressions, 0);
+  const totalPaidImpressions = filteredPosts.reduce((sum, p) => sum + p.paidImpressions, 0);
+  const totalLikes = filteredPosts.reduce((sum, p) => sum + p.likes, 0);
   
   const avgEngagementRate = totalPosts > 0 
-    ? (analyzedPosts.reduce((sum, p) => sum + p.engagementRate, 0) / totalPosts * 100).toFixed(1) + "%" 
+    ? (filteredPosts.reduce((sum, p) => sum + p.engagementRate, 0) / totalPosts * 100).toFixed(1) + "%" 
     : "0.0%";
 
   // 最新のフォロワー数（サマリーから）
@@ -29,7 +51,7 @@ export default function Dashboard() {
     const dailyData: Record<string, { date: string; organic: number; paid: number }> = {};
     
     // 投稿日の文字列(YYYY/MM/DD等)から「日付部分」だけを抽出
-    analyzedPosts.forEach(post => {
+    filteredPosts.forEach(post => {
       const dateKey = post.postTime.split(' ')[0];
       if (!dailyData[dateKey]) {
         dailyData[dateKey] = { date: dateKey, organic: 0, paid: 0 };
@@ -39,19 +61,44 @@ export default function Dashboard() {
     });
 
     return Object.values(dailyData).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [analyzedPosts]);
+  }, [filteredPosts]);
 
-  const topPosts = [...analyzedPosts]
+  const topPosts = [...filteredPosts]
     .sort((a, b) => b.impressions - a.impressions)
     .slice(0, 5);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">ダッシュボード</h2>
-        <p className="text-muted-foreground mt-2 mb-6">
-          SNSアカウントの運用状況と、オーガニック・広告の効果を確認できます。
-        </p>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">ダッシュボード</h2>
+          <p className="text-muted-foreground mt-2">
+            SNSアカウントの運用状況と、オーガニック・広告の効果を確認できます。
+          </p>
+        </div>
+        <div className="flex items-center gap-2 bg-card p-2.5 rounded-lg border shadow-sm">
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground mb-1">開始日</span>
+            <input 
+              type="date" 
+              style={{ colorScheme: 'dark' }}
+              className="bg-background border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <span className="text-muted-foreground mt-5">〜</span>
+          <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground mb-1">終了日</span>
+            <input 
+              type="date" 
+              style={{ colorScheme: 'dark' }}
+              className="bg-background border rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
