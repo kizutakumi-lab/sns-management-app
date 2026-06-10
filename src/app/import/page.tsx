@@ -4,12 +4,14 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { UploadCloud, CheckCircle2, FileText, X } from "lucide-react"
-import Papa from "papaparse"
+import { useData } from "@/lib/DataContext"
+import { parsePostsCSV, parseSummaryCSV, parseAdExcel } from "@/lib/parser"
 
 export default function ImportPage() {
   const [files, setFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [results, setResults] = useState<any[]>([])
+  const { setPosts, setSummaries, setCampaigns } = useData()
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -38,32 +40,32 @@ export default function ImportPage() {
 
     for (const file of files) {
       try {
-        const parsedData = await new Promise<any[]>((resolve, reject) => {
-          Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (res) => resolve(res.data),
-            error: (err) => reject(err)
-          });
-        });
+        let type = 'Unknown';
+        let count = 0;
 
-        const type = file.name.includes("summary") ? "summary" : "posts";
-        
-        const response = await fetch('/api/import', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, data: parsedData })
-        });
-
-        if (!response.ok) {
-          throw new Error('API request failed');
+        if (file.name.includes('posts')) {
+          const parsed = await parsePostsCSV(file);
+          setPosts(parsed);
+          type = '運用データ (投稿)';
+          count = parsed.length;
+        } else if (file.name.includes('summary')) {
+          const parsed = await parseSummaryCSV(file);
+          setSummaries(parsed);
+          type = '日次サマリー';
+          count = parsed.length;
+        } else if (file.name.endsWith('.xlsx')) {
+          const parsed = await parseAdExcel(file);
+          setCampaigns(parsed);
+          type = '広告データ (キャンペーン)';
+          count = parsed.length;
+        } else {
+          throw new Error('未対応のファイル形式です');
         }
 
-        const resData = await response.json();
-        processedResults.push({ name: file.name, rows: resData.processed, type: type === "summary" ? "Summary" : "Posts", status: 'success' });
-      } catch (error) {
+        processedResults.push({ name: file.name, rows: count, type, status: 'success' });
+      } catch (error: any) {
         console.error("Error importing file:", file.name, error);
-        processedResults.push({ name: file.name, status: 'error' });
+        processedResults.push({ name: file.name, status: 'error', error: error.message });
       }
     }
 
@@ -75,9 +77,9 @@ export default function ImportPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">CSV一括インポート</h2>
+        <h2 className="text-3xl font-bold tracking-tight">データインポート</h2>
         <p className="text-muted-foreground mt-2">
-          ソーシャルインサイトから出力した投稿データやサマリーデータのCSVを複数選択して一括アップロードします。
+          運用CSV（投稿・サマリー）とX広告Excel（キャンペーン）を一括アップロードします。
         </p>
       </div>
 
@@ -85,7 +87,8 @@ export default function ImportPage() {
         <CardHeader>
           <CardTitle>データアップロード</CardTitle>
           <CardDescription>
-            ドラッグ＆ドロップ、またはファイルを選択してください。複数のファイルを選択可能です。
+            ドラッグ＆ドロップ、またはファイルを選択してください。
+            対応ファイル: `si__accounts-posts_*.csv`, `si__accounts-summary_*.csv`, `export-*.xlsx`
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -100,12 +103,12 @@ export default function ImportPage() {
               ファイルを選択、またはここにドラッグ＆ドロップ
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              CSV (複数選択可)
+              CSV または XLSX (複数選択可)
             </p>
             <input
               id="file-upload"
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx"
               multiple
               className="hidden"
               onChange={handleFileChange}
@@ -138,7 +141,7 @@ export default function ImportPage() {
               disabled={files.length === 0 || isUploading}
               className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:shadow-lg transition-shadow"
             >
-              {isUploading ? `アップロード中...` : `インポートを実行 (${files.length}ファイル)`}
+              {isUploading ? `処理中...` : `インポートを実行 (${files.length}ファイル)`}
             </Button>
           </div>
         </CardContent>
@@ -149,16 +152,16 @@ export default function ImportPage() {
           <CardContent className="py-4">
             <div className="flex items-center gap-2 text-green-600 font-semibold mb-4">
               <CheckCircle2 className="h-6 w-6" />
-              <span>一括インポート完了</span>
+              <span>インポート完了</span>
             </div>
             <ul className="space-y-2">
               {results.map((r, i) => (
                 <li key={i} className="text-sm flex items-center justify-between border-b border-green-500/20 pb-2 last:border-0 last:pb-0">
-                  <span className="truncate pr-4">{r.name}</span>
+                  <span className="truncate pr-4">{r.name} <span className="text-muted-foreground ml-2">({r.type})</span></span>
                   {r.status === 'success' ? (
                     <span className="text-green-600 shrink-0">{r.rows} 件取り込み</span>
                   ) : (
-                    <span className="text-red-500 shrink-0">エラー</span>
+                    <span className="text-red-500 shrink-0">エラー: {r.error}</span>
                   )}
                 </li>
               ))}

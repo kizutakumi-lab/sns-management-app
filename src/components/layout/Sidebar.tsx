@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, FileUp, List, BarChart3, Settings } from "lucide-react"
+import { LayoutDashboard, Users, FileUp, List, BarChart3, Settings, Link as LinkIcon } from "lucide-react"
 import AccountSwitcher from "./AccountSwitcher"
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/accounts", label: "アカウント管理", icon: Users },
   { href: "/posts", label: "投稿一覧", icon: List },
   { href: "/import", label: "CSVインポート", icon: FileUp },
+  { href: "/mapping", label: "広告紐付け", icon: LinkIcon },
   { href: "/analysis", label: "タグ分析", icon: BarChart3 },
   { href: "/settings", label: "設定", icon: Settings },
 ]
