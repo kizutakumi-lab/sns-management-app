@@ -15,26 +15,27 @@ export default function MappingPage() {
   const [excludedCategories, setExcludedCategories] = useState<string[]>([])
 
   const handleToggleMapping = (campaignId: string, postId: string) => {
-    setMappings(prev => {
-      const existingMapping = prev.find(m => m.campaignId === campaignId);
-      if (existingMapping) {
-        if (existingMapping.postIds.includes(postId)) {
-          // Remove
-          const updatedPostIds = existingMapping.postIds.filter(id => id !== postId);
-          if (updatedPostIds.length === 0) {
-            return prev.filter(m => m.campaignId !== campaignId);
-          }
-          return prev.map(m => m.campaignId === campaignId ? { ...m, postIds: updatedPostIds } : m);
+    const existingMapping = mappings.find(m => m.campaignId === campaignId);
+    let newMappings;
+    if (existingMapping) {
+      if (existingMapping.postIds.includes(postId)) {
+        // Remove
+        const updatedPostIds = existingMapping.postIds.filter(id => id !== postId);
+        if (updatedPostIds.length === 0) {
+          newMappings = mappings.filter(m => m.campaignId !== campaignId);
         } else {
-          // Add
-          return prev.map(m => m.campaignId === campaignId ? { ...m, postIds: [...m.postIds, postId] } : m);
+          newMappings = mappings.map(m => m.campaignId === campaignId ? { ...m, postIds: updatedPostIds } : m);
         }
       } else {
-        // Create new
-        return [...prev, { campaignId, postIds: [postId] }];
+        // Add
+        newMappings = mappings.map(m => m.campaignId === campaignId ? { ...m, postIds: [...m.postIds, postId] } : m);
       }
-    })
-  }
+    } else {
+      // Create new
+      newMappings = [...mappings, { campaignId, postIds: [postId] }];
+    }
+    setMappings(newMappings);
+  };
 
   // キャンペーンごとの紐付き数
   const getMappedCount = (campaignId: string) => {
