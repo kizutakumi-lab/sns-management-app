@@ -89,9 +89,14 @@ export default async function AccountsPage() {
                 <div className="text-xs text-muted-foreground mb-4">
                   最終インポート: {acc.lastImportedAt || '不明'}
                 </div>
-                <Link href="/posts">
-                  <Button variant="outline" className="w-full">このアカウントの投稿を見る</Button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link href={`/accounts/${acc.id}/notes`} className="flex-1">
+                    <Button variant="secondary" className="w-full">議事録メモ</Button>
+                  </Link>
+                  <Link href={`/posts?accountId=${acc.id}`} className="flex-1">
+                    <Button variant="outline" className="w-full">投稿を見る</Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           ))

@@ -44,3 +44,11 @@ export const getCachedTags = unstable_cache(
   ["drive-tags"],
   { tags: ["drive-tags"] }
 );
+
+export const getCachedNotes = unstable_cache(
+  async () => {
+    return (await readJsonFile("notes.json")) || {};
+  },
+  ["drive-notes"],
+  { tags: ["drive-data"] }
+);
