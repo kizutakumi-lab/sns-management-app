@@ -55,7 +55,7 @@ export default function Dashboard() {
       }
       
       if (selectedAccountId !== "all" && selectedAccount) {
-        if (!isMatch(p.authorId, selectedAccount)) return false;
+        if (!isMatch(p.authorId || "", selectedAccount)) return false;
       }
       
       return true;
@@ -86,7 +86,7 @@ export default function Dashboard() {
   // アカウントで絞り込んだサマリー
   const targetSummaries = useMemo(() => {
     if (selectedAccountId === "all" || !selectedAccount) return summaries;
-    return summaries.filter(s => isMatch(s.authorId, selectedAccount));
+    return summaries.filter(s => isMatch(s.authorId || "", selectedAccount));
   }, [summaries, selectedAccountId, selectedAccount]);
 
   // アカウントで絞り込んだスナップショット (postIdが該当アカウントの投稿に含まれるか)
@@ -96,7 +96,7 @@ export default function Dashboard() {
     // 該当アカウントの全投稿IDセット (期間フィルタリング前のものでOK)
     const validPostIds = new Set(
       analyzedPosts
-        .filter(p => isMatch(p.authorId, selectedAccount))
+        .filter(p => isMatch(p.authorId || "", selectedAccount))
         .map(p => p.id)
     );
     return snapshots.filter(s => validPostIds.has(s.postId));
@@ -112,7 +112,7 @@ export default function Dashboard() {
       let totalPrev = 0;
       accounts.forEach(acc => {
         const accSums = summaries
-          .filter(s => isMatch(s.authorId, acc))
+          .filter(s => isMatch(s.authorId || "", acc))
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         if (accSums.length > 0) {

@@ -55,7 +55,7 @@ export default function AnalysisPage() {
       }
       
       if (selectedAccountId !== "all" && selectedAccount) {
-        if (!isMatch(p.authorId, selectedAccount)) return false;
+        if (!isMatch(p.authorId || "", selectedAccount)) return false;
       }
       
       return true;

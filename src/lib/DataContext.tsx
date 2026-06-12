@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { RawPostData, RawAdCampaign, DailySummary, AdCampaignMapping, AnalyzedPost } from './types';
+import { RawPostData, RawAdCampaign, DailySummary, AdCampaignMapping, AnalyzedPost, PostSnapshot } from './types';
 
 interface DataContextType {
   posts: RawPostData[];
