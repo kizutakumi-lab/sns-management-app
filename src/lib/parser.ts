@@ -23,6 +23,10 @@ export const parsePostsCSV = async (file: File): Promise<RawPostData[]> => {
       skipEmptyLines: true,
       complete: (results) => {
         try {
+          // ファイル名から username を抽出 (例: si__accounts-posts_hachiemon_x.csv -> hachiemon_x)
+          const match = file.name.match(/si__accounts-(?:posts|summary)_(.*?)(?:_\d+)?\.csv/);
+          const authorId = match ? match[1] : undefined;
+
           const posts = results.data.map((row: any) => ({
             id: row['投稿ID'],
             postTime: row['投稿時間'],
@@ -35,6 +39,7 @@ export const parsePostsCSV = async (file: File): Promise<RawPostData[]> => {
             bookmarks: parseNumber(row['ブックマーク数']),
             engagementRate: parseNumber(row['エンゲージメント率']),
             linkClicks: parseNumber(row['詳細URLクリック数'] || row['リンククリック数'] || 0),
+            authorId: authorId,
           })).filter((post: RawPostData) => post.id && post.postTime); // IDと時間があるものだけ残す
           resolve(posts);
         } catch (error) {
@@ -55,12 +60,16 @@ export const parseSummaryCSV = async (file: File): Promise<DailySummary[]> => {
       skipEmptyLines: true,
       complete: (results) => {
         try {
+          const match = file.name.match(/si__accounts-(?:posts|summary)_(.*?)(?:_\d+)?\.csv/);
+          const authorId = match ? match[1] : undefined;
+
           const summaries = results.data.map((row: any) => ({
             date: row['日時'],
             postCount: parseNumber(row['投稿数']),
             followers: parseNumber(row['フォロワー数']),
             following: parseNumber(row['フォロー数']),
             lists: parseNumber(row['リスト数']),
+            authorId: authorId,
           })).filter((sum: DailySummary) => sum.date);
           resolve(summaries);
         } catch (error) {

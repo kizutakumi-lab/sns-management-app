@@ -1,9 +1,13 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
-const SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file', 
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/spreadsheets'
+];
 
-function getAuth() {
+export function getAuth() {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
     throw new Error('Google credentials not set in environment variables');
   }
@@ -62,6 +66,8 @@ export async function findFileByName(fileName: string) {
     q: `name='${fileName}' and '${folderId}' in parents and trashed=false`,
     fields: 'files(id, name)',
     spaces: 'drive',
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
   });
 
   if (res.data.files && res.data.files.length > 0) {
@@ -79,7 +85,7 @@ export async function readJsonFile(fileName: string) {
   }
 
   const res = await drive.files.get(
-    { fileId: file.id, alt: 'media' },
+    { fileId: file.id, alt: 'media', supportsAllDrives: true },
     { responseType: 'text' }
   );
 
@@ -109,6 +115,7 @@ export async function writeJsonFile(fileName: string, data: any) {
     await drive.files.update({
       fileId: existingFile.id,
       media: media,
+      supportsAllDrives: true,
     });
   } else {
     // Create new file
@@ -119,6 +126,7 @@ export async function writeJsonFile(fileName: string, data: any) {
       },
       media: media,
       fields: 'id',
+      supportsAllDrives: true,
     });
   }
 }

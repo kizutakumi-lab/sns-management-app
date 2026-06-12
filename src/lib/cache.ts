@@ -25,6 +25,14 @@ export const getCachedAccounts = unstable_cache(
   { tags: ["drive-data"] }
 );
 
+export const getCachedSummaries = unstable_cache(
+  async () => {
+    return (await readJsonFile("summaries.json")) || [];
+  },
+  ["drive-summaries"],
+  { tags: ["drive-data"] }
+);
+
 export const getCachedImportLogs = unstable_cache(
   async () => {
     return (await readJsonFile("import_logs.json")) || [];

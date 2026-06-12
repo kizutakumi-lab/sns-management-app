@@ -1,6 +1,6 @@
-import { getCachedAccounts, getCachedPosts, getCachedSnapshots } from "@/lib/cache";
+import { getCachedAccounts, getCachedPosts, getCachedSnapshots, getCachedSummaries } from "@/lib/cache";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Building2, BarChart3, Activity } from "lucide-react";
+import { Users, Building2, BarChart3, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -8,11 +8,13 @@ export default async function AccountsPage() {
   let accounts = [];
   let posts = [];
   let snapshots = [];
+  let summaries = [];
 
   try {
     accounts = await getCachedAccounts();
     posts = await getCachedPosts();
     snapshots = await getCachedSnapshots();
+    summaries = await getCachedSummaries();
   } catch (e) {
     console.error("Failed to load data", e);
   }
@@ -25,14 +27,39 @@ export default async function AccountsPage() {
   }, {});
 
   const accountStats = accounts.map((acc: any) => {
-    const accPosts = posts.filter((p: any) => p.authorId === acc.id);
-    const accSnaps = accPosts.map((p: any) => latestSnapshots[p.id]).filter(Boolean);
+    const isMatch = (authorId: string) => {
+      if (!authorId) return false;
+      if (authorId === acc.id) return true;
+      if (authorId === acc.username) return true;
+      if (authorId.includes(acc.username)) return true;
+      if (acc.name && authorId.includes(acc.name)) return true;
+      const shortName = acc.name ? acc.name.substring(0, 5) : "";
+      if (shortName && authorId.includes(shortName)) return true;
+      return false;
+    };
+
+    const accPosts = posts.filter((p: any) => isMatch(p.authorId));
+    const totalImpressions = accPosts.reduce((sum: number, p: any) => sum + (p.impressions || 0), 0);
+    const totalLikes = accPosts.reduce((sum: number, p: any) => sum + (p.likes || 0), 0);
+
+    const accSummaries = summaries
+      .filter((s: any) => isMatch(s.authorId))
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
-    const totalImpressions = accSnaps.reduce((sum: number, s: any) => sum + (s.impressions || 0), 0);
-    const totalLikes = accSnaps.reduce((sum: number, s: any) => sum + (s.likes || 0), 0);
+    let currentFollowers = acc.followers || 0;
+    let followerDiff = 0;
+    
+    if (accSummaries.length > 0) {
+      currentFollowers = accSummaries[0].followers;
+      if (accSummaries.length > 1) {
+        followerDiff = currentFollowers - accSummaries[1].followers;
+      }
+    }
     
     return {
       ...acc,
+      currentFollowers,
+      followerDiff,
       postCount: accPosts.length,
       totalImpressions,
       totalLikes,
@@ -79,7 +106,15 @@ export default async function AccountsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1"><Users className="w-3 h-3"/> フォロワー</p>
-                    <p className="text-xl font-bold mt-1">{acc.followers.toLocaleString()}</p>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <p className="text-xl font-bold">{acc.currentFollowers.toLocaleString()}</p>
+                      {acc.followerDiff !== 0 && (
+                        <div className={`text-xs font-semibold flex items-center ${acc.followerDiff > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {acc.followerDiff > 0 ? <ArrowUpRight className="h-3 w-3 mr-0.5" /> : <ArrowDownRight className="h-3 w-3 mr-0.5" />}
+                          {Math.abs(acc.followerDiff).toLocaleString()}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1"><BarChart3 className="w-3 h-3"/> 累計インプレッション</p>

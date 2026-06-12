@@ -10,6 +10,7 @@ export interface RawPostData {
   bookmarks: number; // ブックマーク数
   engagementRate: number; // エンゲージメント率
   linkClicks: number; // リンククリック数
+  authorId?: string; // アカウントID (推測値)
 }
 
 export interface RawAdCampaign {
@@ -33,6 +34,7 @@ export interface DailySummary {
   followers: number; // フォロワー数
   following: number; // フォロー数
   lists: number; // リスト数
+  authorId?: string; // アカウントID (推測値)
 }
 
 export interface AdCampaignMapping {
@@ -53,4 +55,15 @@ export interface AnalyzedPost extends RawPostData {
   paidLinkClicks: number;
   campaigns: RawAdCampaign[]; // 紐付いているキャンペーン
   categories: string[]; // カテゴリタグ
+}
+
+export interface PostSnapshot {
+  postId: string;
+  date: string; // 記録日 (YYYY-MM-DD)
+  impressions: number;
+  likes: number;
+  reposts: number;
+  replies: number;
+  bookmarks: number;
+  engagementRate: number;
 }

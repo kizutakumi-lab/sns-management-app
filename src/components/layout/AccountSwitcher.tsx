@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronsUpDown, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useData } from "@/lib/DataContext";
 
 export default function AccountSwitcher() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<any[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("all");
+  const { selectedAccountId, setSelectedAccountId } = useData();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -21,21 +22,17 @@ export default function AccountSwitcher() {
       })
       .catch(err => console.error("Failed to load accounts", err));
 
-    // Get selected from cookie
-    const match = document.cookie.match(/(?:^|;)\s*selectedAccountId=([^;]*)/);
-    if (match) {
-      setSelectedId(match[1]);
-    }
+    // Cookieの初期化は DataContext 内で行うため、ここでは Accounts のみフェッチ
   }, []);
 
   const handleSelect = (id: string) => {
-    setSelectedId(id);
+    setSelectedAccountId(id);
     document.cookie = `selectedAccountId=${id}; path=/; max-age=31536000`;
     setIsOpen(false);
     router.refresh(); // Refresh server components to re-fetch data for the new account
   };
 
-  const selectedAccount = selectedId === "all" ? null : accounts.find(a => a.id === selectedId);
+  const selectedAccount = selectedAccountId === "all" ? null : accounts.find(a => a.id === selectedAccountId);
 
   return (
     <div className="relative mb-6 px-4">
@@ -65,7 +62,7 @@ export default function AccountSwitcher() {
             onClick={() => handleSelect("all")}
           >
             <span>すべてのアカウント</span>
-            {selectedId === "all" && <Check className="w-4 h-4" />}
+            {selectedAccountId === "all" && <Check className="w-4 h-4" />}
           </div>
           {accounts.map((acc) => (
             <div
@@ -77,7 +74,7 @@ export default function AccountSwitcher() {
                 <span className="truncate font-medium">{acc.name}</span>
                 <span className="text-xs text-muted-foreground truncate">@{acc.username}</span>
               </div>
-              {selectedId === acc.id && <Check className="w-4 h-4" />}
+              {selectedAccountId === acc.id && <Check className="w-4 h-4" />}
             </div>
           ))}
         </div>

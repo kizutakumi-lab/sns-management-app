@@ -11,7 +11,7 @@ export default function ImportPage() {
   const [files, setFiles] = useState<File[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [results, setResults] = useState<any[]>([])
-  const { setPosts, setSummaries, setCampaigns } = useData()
+  const { setPosts, setSummaries, setCampaigns, setSnapshots } = useData()
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -45,17 +45,59 @@ export default function ImportPage() {
 
         if (file.name.includes('posts')) {
           const parsed = await parsePostsCSV(file);
-          setPosts(parsed);
+          setPosts((prev: any) => {
+            const map = new Map();
+            (prev || []).forEach((p: any) => map.set(p.id, p));
+            parsed.forEach((p: any) => map.set(p.id, p));
+            return Array.from(map.values());
+          });
+          
+          // スナップショットの生成と追加
+          const today = new Date().toISOString().split('T')[0];
+          const newSnapshots = parsed.map((p: any) => ({
+            postId: p.id,
+            date: today,
+            impressions: p.impressions,
+            likes: p.likes,
+            reposts: p.reposts,
+            replies: p.replies,
+            bookmarks: p.bookmarks,
+            engagementRate: p.engagementRate
+          }));
+          
+          setSnapshots((prev: any) => {
+            const map = new Map();
+            (prev || []).forEach((s: any) => map.set(`${s.postId}-${s.date}`, s));
+            newSnapshots.forEach((s: any) => map.set(`${s.postId}-${s.date}`, s));
+            return Array.from(map.values());
+          });
+
           type = '運用データ (投稿)';
           count = parsed.length;
         } else if (file.name.includes('summary')) {
           const parsed = await parseSummaryCSV(file);
-          setSummaries(parsed);
+          setSummaries((prev: any) => {
+            const map = new Map();
+            (prev || []).forEach((p: any) => {
+              const key = p.authorId ? `${p.authorId}-${p.date}` : p.date;
+              map.set(key, p);
+            });
+            parsed.forEach((p: any) => {
+              const key = p.authorId ? `${p.authorId}-${p.date}` : p.date;
+              map.set(key, p);
+            });
+            return Array.from(map.values());
+          });
           type = '日次サマリー';
           count = parsed.length;
         } else if (file.name.endsWith('.xlsx')) {
           const parsed = await parseAdExcel(file);
-          setCampaigns(parsed);
+          setCampaigns((prev: any) => {
+            const map = new Map();
+            (prev || []).forEach((p: any) => map.set(p.id, p));
+            parsed.forEach((p: any) => map.set(p.id, p));
+            return Array.from(map.values());
+          });
           type = '広告データ (キャンペーン)';
           count = parsed.length;
         } else {
