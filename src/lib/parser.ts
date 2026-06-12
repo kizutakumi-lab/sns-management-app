@@ -23,24 +23,37 @@ export const parsePostsCSV = async (file: File): Promise<RawPostData[]> => {
       skipEmptyLines: true,
       complete: (results) => {
         try {
-          // ファイル名から username を抽出 (例: si__accounts-posts_hachiemon_x.csv -> hachiemon_x)
+          // ファイル名からの fallback 抽出
           const match = file.name.match(/si__accounts-(?:posts|summary)_(.*?)(?:_\d+)?\.csv/);
-          const authorId = match ? match[1] : undefined;
+          const fallbackAuthorId = match ? match[1] : undefined;
 
-          const posts = results.data.map((row: any) => ({
-            id: row['投稿ID'],
-            postTime: row['投稿時間'],
-            text: row['内容'],
-            url: row['詳細URL'],
-            impressions: parseNumber(row['表示回数']),
-            likes: parseNumber(row['いいね数']),
-            reposts: parseNumber(row['リポスト(合計)']),
-            replies: parseNumber(row['リプライ数']),
-            bookmarks: parseNumber(row['ブックマーク数']),
-            engagementRate: parseNumber(row['エンゲージメント率']),
-            linkClicks: parseNumber(row['詳細URLクリック数'] || row['リンククリック数'] || 0),
-            authorId: authorId,
-          })).filter((post: RawPostData) => post.id && post.postTime); // IDと時間があるものだけ残す
+          const posts = results.data.map((row: any) => {
+            const url = row['詳細URL'] || row['ポストのURL'] || row['URL'] || '';
+            let authorId = fallbackAuthorId;
+            
+            // URLから X (Twitter) のユーザー名を抽出 (例: https://x.com/username/status/...)
+            if (url) {
+              const urlMatch = url.match(/x\.com\/([^\/]+)\/status/i) || url.match(/twitter\.com\/([^\/]+)\/status/i);
+              if (urlMatch && urlMatch[1]) {
+                authorId = urlMatch[1];
+              }
+            }
+
+            return {
+              id: row['投稿ID'] || row['ポストID'] || row['Tweet id'],
+              postTime: row['投稿時間'] || row['日付'] || row['time'],
+              text: row['内容'] || row['ポスト本文'] || row['Tweet text'],
+              url: url,
+              impressions: parseNumber(row['表示回数'] || row['インプレッション'] || row['impressions']),
+              likes: parseNumber(row['いいね数'] || row['いいね'] || row['likes']),
+              reposts: parseNumber(row['リポスト(合計)'] || row['リポスト'] || row['retweets']),
+              replies: parseNumber(row['リプライ数'] || row['返信'] || row['replies']),
+              bookmarks: parseNumber(row['ブックマーク数'] || row['ブックマーク'] || row['user profile clicks']),
+              engagementRate: parseNumber(row['エンゲージメント率'] || row['エンゲージメント'] || row['engagement rate']),
+              linkClicks: parseNumber(row['詳細URLクリック数'] || row['リンククリック数'] || row['url clicks'] || 0),
+              authorId: authorId,
+            };
+          }).filter((post: RawPostData) => post.id && post.postTime); // IDと時間があるものだけ残す
           resolve(posts);
         } catch (error) {
           reject(error);

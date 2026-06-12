@@ -422,6 +422,14 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (!(postTags || {})[post.id]) {
+        // authorIdから判定できなかった場合のフォールバック
+        if (!categories.includes('ハチエモン') && (post.text?.includes('ハチエモン') || post.text?.includes('ハチえもん'))) {
+          categories.push('ハチエモン');
+        }
+        if (!categories.includes('ジョーくん') && (post.text?.includes('ジョーくん') || post.text?.includes('ジョー君'))) {
+          categories.push('ジョーくん');
+        }
+
         if (post.text?.includes('プレゼント') || post.text?.includes('キャンペーン') || post.text?.includes('プレキャン')) categories.push('プレキャン');
         if (post.text?.includes('【ごちエモン】')) categories.push('グルメ');
         if (post.url?.includes('/video/') || post.url?.includes('youtu')) categories.push('動画');
