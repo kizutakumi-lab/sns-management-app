@@ -2,9 +2,9 @@
 
 import { useData } from "@/lib/DataContext"
 import { Card, CardContent } from "@/components/ui/card"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import TweetThumbnail from "@/components/posts/TweetThumbnail";
-import { ExternalLink, Search, Filter, SortDesc, SortAsc, CheckSquare } from "lucide-react"
+import { ExternalLink, Search, Filter, SortDesc, SortAsc, CheckSquare, ChevronLeft, ChevronRight } from "lucide-react"
 
 type SortField = 'postTime' | 'impressions' | 'organicImpressions' | 'paidImpressions' | 'likes' | 'reposts' | 'replies' | 'linkClicks';
 type SortOrder = 'asc' | 'desc';
@@ -34,6 +34,8 @@ export default function PostsPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
   const [bulkTagInput, setBulkTagInput] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 20
 
   // 全カテゴリの抽出
   const allCategories = useMemo(() => {
@@ -103,11 +105,45 @@ export default function PostsPage() {
       setSortField(field);
       setSortOrder('desc');
     }
+    setCurrentPage(1);
   };
 
+  // 検索・フィルタ変更時に1ページ目に戻す
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategories, excludedCategories]);
 
+  // ページネーション用データ
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedPosts.length / ITEMS_PER_PAGE));
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredAndSortedPosts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredAndSortedPosts, currentPage]);
 
-  const SortIcon = ({ field }: { field: SortField }) => {
+  const PaginationControls = () => (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground mr-2">
+        {filteredAndSortedPosts.length} 件中 {filteredAndSortedPosts.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredAndSortedPosts.length)} 件
+      </span>
+      <button 
+        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+        disabled={currentPage === 1}
+        className="p-1 border rounded hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+      >
+        <ChevronLeft className="w-5 h-5" />
+      </button>
+      <span className="text-sm font-medium px-2">
+        {currentPage} / {totalPages}
+      </span>
+      <button 
+        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+        disabled={currentPage === totalPages}
+        className="p-1 border rounded hover:bg-muted disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+      >
+        <ChevronRight className="w-5 h-5" />
+      </button>
+    </div>
+  );  const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return null;
     return sortOrder === 'asc' ? <SortAsc className="w-4 h-4 ml-1 inline" /> : <SortDesc className="w-4 h-4 ml-1 inline" />;
   };
@@ -271,6 +307,10 @@ export default function PostsPage() {
         </div>
       </div>
 
+      <div className="flex justify-end items-center mb-2">
+        <PaginationControls />
+      </div>
+
       {selectedPostIds.length > 0 && (
         <div className="bg-primary/10 border border-primary/20 p-3 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2 text-sm font-medium text-primary">
@@ -355,14 +395,14 @@ export default function PostsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSortedPosts.length === 0 ? (
+                {paginatedPosts.length === 0 ? (
                   <tr>
                     <td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">
                       データがありません
                     </td>
                   </tr>
                 ) : (
-                  filteredAndSortedPosts.map((post) => {
+                  paginatedPosts.map((post) => {
                     let contentText = post.text || '';
                     const urlMatches = contentText.match(/\[\[(.*?)\]\]/);
                     const mediaUrl = urlMatches ? urlMatches[1] : post.url;
@@ -438,6 +478,10 @@ export default function PostsPage() {
           </div>
         </CardContent>
       </Card>
+      
+      <div className="flex justify-end items-center mt-4 mb-8">
+        <PaginationControls />
+      </div>
     </div>
   )
 }
