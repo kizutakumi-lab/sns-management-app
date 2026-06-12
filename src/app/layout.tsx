@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SNS Management Dashboard",
+  title: "SNS運用管理くん",
   description: "Manage SNS accounts, posts, and analytics.",
 };
 

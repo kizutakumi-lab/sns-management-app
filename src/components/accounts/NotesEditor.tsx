@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Send, UserPlus, AlertCircle, RefreshCw } from "lucide-react";
+import { Send, UserPlus, AlertCircle, RefreshCw, Edit2, X } from "lucide-react";
 
 export interface NoteBlock {
   id: string;
@@ -24,6 +24,7 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
   const [notes, setNotes] = useState<NoteBlock[]>(initialNotes);
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   
   // 参加者スタンプ関連
   const [participants, setParticipants] = useState<string[]>([]);
@@ -104,14 +105,15 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
 
     setIsSaving(true);
     const newBlock: NoteBlock = {
-      id: crypto.randomUUID(),
+      id: editingNoteId || crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       content: content.trim(),
     };
 
-    // UIを即時更新（楽観的UI更新）
-    setNotes((prev) => [newBlock, ...prev]);
+    // UIを即時更新（楽観的UI更新：古いものを消して先頭に）
+    setNotes((prev) => [newBlock, ...prev.filter(n => n.id !== newBlock.id)]);
     setContent("");
+    setEditingNoteId(null);
 
     try {
       const res = await fetch("/api/notes", {
@@ -141,13 +143,26 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
     }
   };
 
+  const handleEdit = (note: NoteBlock) => {
+    setContent(note.content);
+    setEditingNoteId(note.id);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+
+  const cancelEdit = () => {
+    setContent("");
+    setEditingNoteId(null);
+  };
+
   return (
     <Card className="h-full flex flex-col border-none shadow-none bg-transparent overflow-hidden">
       <CardHeader className="px-0 pt-0 pb-4 shrink-0">
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-2xl">{accountName} - 議事録メモ</CardTitle>
+              <CardTitle className="text-2xl">{accountName} - MTGメモ＆TODO</CardTitle>
               <CardDescription className="mt-1">
                 複数人で同時に記録できます。スタンプを押して「誰の発言・タスクか」を明記し、送信してください。
               </CardDescription>
@@ -208,22 +223,30 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
       </CardHeader>
 
       {/* 投稿フォーム */}
-      <div className="px-0 pb-4 shrink-0 flex gap-2">
-        <Textarea
-          ref={textareaRef}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="ここに入力してください... (Ctrl+Enterで送信)"
-          className="flex-1 min-h-[80px] resize-y"
-        />
-        <Button 
-          onClick={handleSend} 
-          disabled={isSaving || !content.trim()} 
-          className="h-auto px-6 shrink-0"
-        >
-          {isSaving ? "送信中..." : <><Send className="w-4 h-4 mr-2" /> 送信</>}
-        </Button>
+      <div className="px-0 pb-4 shrink-0">
+        {editingNoteId && (
+          <div className="flex items-center justify-between bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-t-md border border-b-0 border-primary/20">
+            <span className="font-medium">既存のメモを編集中 (送信すると最新の日付で一番上に移動します)</span>
+            <button onClick={cancelEdit} className="hover:bg-primary/20 p-1 rounded-full"><X className="w-3 h-3" /></button>
+          </div>
+        )}
+        <div className="flex gap-2">
+          <Textarea
+            ref={textareaRef}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="ここに入力してください... (Ctrl+Enterで送信)"
+            className={`flex-1 min-h-[80px] resize-y ${editingNoteId ? 'rounded-tl-none border-t-0 border-primary/20 bg-primary/5 focus-visible:ring-primary/50' : ''}`}
+          />
+          <Button 
+            onClick={handleSend} 
+            disabled={isSaving || !content.trim()} 
+            className="h-auto px-6 shrink-0"
+          >
+            {isSaving ? "送信中..." : <><Send className="w-4 h-4 mr-2" /> {editingNoteId ? "更新" : "送信"}</>}
+          </Button>
+        </div>
       </div>
 
       {/* タイムライン */}
@@ -240,6 +263,10 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
                   <span className="text-xs text-muted-foreground font-medium bg-background px-2 py-1 rounded border shadow-sm">
                     {format(new Date(note.timestamp), "yyyy/MM/dd HH:mm", { locale: ja })}
                   </span>
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(note)} className="h-7 text-xs text-muted-foreground hover:text-primary">
+                    <Edit2 className="w-3 h-3 mr-1" />
+                    編集
+                  </Button>
                 </div>
                 <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground font-mono">
                   {note.content}

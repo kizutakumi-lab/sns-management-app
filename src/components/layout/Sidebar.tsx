@@ -23,7 +23,7 @@ export function Sidebar() {
     <aside className="w-64 border-r bg-card/50 glass hidden md:flex flex-col">
       <div className="h-16 flex items-center px-6 border-b">
         <h1 className="text-lg font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-          SNS Management
+          SNS運用管理くん
         </h1>
       </div>
       <div className="p-3 border-b">

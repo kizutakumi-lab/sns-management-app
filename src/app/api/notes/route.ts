@@ -51,6 +51,9 @@ export async function POST(req: NextRequest) {
       accountNotes = [];
     }
     
+    // 同じIDの古いノートがあれば削除（更新用）
+    accountNotes = accountNotes.filter((n: any) => n.id !== block.id);
+    
     // 最新のものを先頭に追加 (unshift)
     accountNotes.unshift(block);
     notes[accountId] = accountNotes;
