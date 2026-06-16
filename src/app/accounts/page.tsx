@@ -52,7 +52,8 @@ export default async function AccountsPage() {
     let followerDiff = 0;
     
     if (accSummaries.length > 0) {
-      currentFollowers = accSummaries[0].followers;
+      // accounts.jsonはCSVインポートで更新されるため、summariesとaccountsの大きい方を最新とする
+      currentFollowers = Math.max(acc.followers || 0, accSummaries[0].followers);
       if (accSummaries.length > 1) {
         followerDiff = currentFollowers - accSummaries[1].followers;
       }

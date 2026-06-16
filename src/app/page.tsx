@@ -116,8 +116,9 @@ export default function Dashboard() {
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         if (accSums.length > 0) {
-          totalCurr += accSums[0].followers;
-          totalPrev += accSums.length > 1 ? accSums[1].followers : accSums[0].followers;
+          const latestFollowers = Math.max(acc.followers || 0, accSums[0].followers);
+          totalCurr += latestFollowers;
+          totalPrev += accSums.length > 1 ? accSums[1].followers : latestFollowers;
         } else {
           totalCurr += acc.followers || 0;
           totalPrev += acc.followers || 0;
@@ -128,7 +129,7 @@ export default function Dashboard() {
     } else {
       const sortedSummaries = [...targetSummaries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       if (sortedSummaries.length > 0) {
-        curr = sortedSummaries[0].followers;
+        curr = Math.max(selectedAccount?.followers || 0, sortedSummaries[0].followers);
         diff = curr - (sortedSummaries.length > 1 ? sortedSummaries[1].followers : curr);
       } else {
         curr = selectedAccount?.followers || 0;
