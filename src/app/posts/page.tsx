@@ -34,6 +34,8 @@ export default function PostsPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([])
   const [bulkTagInput, setBulkTagInput] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 20
 
@@ -79,6 +81,17 @@ export default function PostsPage() {
       // 除外条件: 指定されたタグが1つでも含まれていたら除外
       result = result.filter(p => !excludedCategories.some(cat => p.categories.includes(cat)));
     }
+    
+    // 期間フィルタリング
+    if (startDate) {
+      const start = new Date(startDate).getTime();
+      result = result.filter(p => new Date(p.postTime.split(' ')[0].replace(/-/g, '/')).getTime() >= start);
+    }
+    if (endDate) {
+      // endDateは指定日の23:59:59までとするために1日足すか、Dateでパースして比較
+      const end = new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1; 
+      result = result.filter(p => new Date(p.postTime.split(' ')[0].replace(/-/g, '/')).getTime() <= end);
+    }
 
     // ソート
     result.sort((a, b) => {
@@ -111,7 +124,7 @@ export default function PostsPage() {
   // 検索・フィルタ変更時に1ページ目に戻す
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategories, excludedCategories]);
+  }, [searchTerm, selectedCategories, excludedCategories, startDate, endDate]);
 
   // ページネーション用データ
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedPosts.length / ITEMS_PER_PAGE));
@@ -265,6 +278,31 @@ export default function PostsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-sm text-muted-foreground">期間:</span>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <span className="text-muted-foreground">〜</span>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            {(startDate || endDate) && (
+              <button 
+                onClick={() => { setStartDate(""); setEndDate(""); }}
+                className="text-xs text-muted-foreground hover:text-foreground underline ml-1"
+              >
+                クリア
+              </button>
+            )}
           </div>
           
           <div className="flex-1 min-w-0">

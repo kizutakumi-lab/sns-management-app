@@ -32,20 +32,34 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // マウント時にlocalStorageから参加者を読み込む
+  // マウント時にAPIから参加者を読み込む
   useEffect(() => {
-    const saved = localStorage.getItem("sns-notes-participants");
-    if (saved) {
+    const fetchParticipants = async () => {
       try {
-        setParticipants(JSON.parse(saved));
-      } catch (e) {}
-    }
+        const res = await fetch("/api/notes/participants");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.participants) setParticipants(data.participants);
+        }
+      } catch (e) {
+        console.error("Failed to fetch participants", e);
+      }
+    };
+    fetchParticipants();
   }, []);
 
-  // 参加者が更新されたらlocalStorageに保存
-  useEffect(() => {
-    localStorage.setItem("sns-notes-participants", JSON.stringify(participants));
-  }, [participants]);
+  const saveParticipants = async (newParticipants: string[]) => {
+    setParticipants(newParticipants);
+    try {
+      await fetch("/api/notes/participants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participants: newParticipants }),
+      });
+    } catch (e) {
+      console.error("Failed to save participants", e);
+    }
+  };
 
   // ポーリングで最新のノートを取得
   const fetchLatestNotes = async () => {
@@ -71,13 +85,13 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
   const addParticipant = () => {
     const name = newParticipant.trim();
     if (name && !participants.includes(name)) {
-      setParticipants([...participants, name]);
+      saveParticipants([...participants, name]);
       setNewParticipant("");
     }
   };
 
   const removeParticipant = (name: string) => {
-    setParticipants(participants.filter((p) => p !== name));
+    saveParticipants(participants.filter((p) => p !== name));
   };
 
   const insertStamp = (name: string) => {

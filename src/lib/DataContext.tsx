@@ -235,61 +235,44 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         };
 
         const mergeData = (driveData: any, localData: any) => {
-          if (!driveData) return localData || null;
-          if (!localData) return driveData;
-          
-          if (Array.isArray(driveData) && Array.isArray(localData)) {
-            const mergedMap = new Map();
-            driveData.forEach(item => { 
-              const key = item.id || item.campaignId || (item.authorId ? `${item.authorId}-${item.date}` : item.date);
-              if (key) mergedMap.set(key, item); 
-            });
-            localData.forEach(item => { 
-              const key = item.id || item.campaignId || (item.authorId ? `${item.authorId}-${item.date}` : item.date);
-              if (key) mergedMap.set(key, item); 
-            });
-            return Array.from(mergedMap.values());
-          }
-          
-          if (typeof driveData === 'object' && typeof localData === 'object') {
-            return { ...driveData, ...localData };
-          }
-          return localData;
+          // Driveのデータを正とする（ローカルデータはDrive取得前の一時表示用として扱う）
+          if (driveData) return driveData;
+          return localData || null;
         };
 
         const drivePosts = await fetchDriveData('posts');
         const mergedPosts = mergeData(drivePosts, localPosts);
-        if (mergedPosts) {
+        if (drivePosts || mergedPosts !== localPosts) {
           setPosts(mergedPosts);
-          if (localPosts) await syncToDrive('posts', mergedPosts);
+          if (!drivePosts && localPosts) await syncToDrive('posts', mergedPosts);
         }
 
         const driveCampaigns = await fetchDriveData('campaigns');
         const mergedCampaigns = mergeData(driveCampaigns, localCampaigns);
-        if (mergedCampaigns) {
+        if (driveCampaigns || mergedCampaigns !== localCampaigns) {
           setCampaigns(mergedCampaigns);
-          if (localCampaigns) await syncToDrive('campaigns', mergedCampaigns);
+          if (!driveCampaigns && localCampaigns) await syncToDrive('campaigns', mergedCampaigns);
         }
         
         const driveSummaries = await fetchDriveData('summaries');
         const mergedSummaries = mergeData(driveSummaries, localSummaries);
-        if (mergedSummaries) {
+        if (driveSummaries || mergedSummaries !== localSummaries) {
           setSummaries(mergedSummaries);
-          if (localSummaries) await syncToDrive('summaries', mergedSummaries);
+          if (!driveSummaries && localSummaries) await syncToDrive('summaries', mergedSummaries);
         }
 
         const driveMappings = await fetchDriveData('mappings');
         const mergedMappings = mergeData(driveMappings, localMappings);
-        if (mergedMappings) {
+        if (driveMappings || mergedMappings !== localMappings) {
           setMappings(mergedMappings);
-          if (localMappings) await syncToDrive('mappings', mergedMappings);
+          if (!driveMappings && localMappings) await syncToDrive('mappings', mergedMappings);
         }
 
         const drivePostTags = await fetchDriveData('postTags');
         const mergedPostTags = mergeData(drivePostTags, localPostTags);
-        if (mergedPostTags) {
+        if (drivePostTags || mergedPostTags !== localPostTags) {
           setPostTags(mergedPostTags);
-          if (localPostTags) await syncToDrive('postTags', mergedPostTags);
+          if (!drivePostTags && localPostTags) await syncToDrive('postTags', mergedPostTags);
         }
 
         const driveSnapshots = await fetchDriveData('post_snapshots');
@@ -302,17 +285,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         
         // snapshots のマージキーは postId と date の複合
         const mergeSnapshots = (driveD: any, localD: any) => {
-          if (!driveD) return localD || [];
-          if (!localD) return driveD || [];
-          const map = new Map();
-          driveD.forEach((item: any) => map.set(`${item.postId}-${item.date}`, item));
-          localD.forEach((item: any) => map.set(`${item.postId}-${item.date}`, item));
-          return Array.from(map.values());
+          if (driveD) return driveD;
+          return localD || [];
         };
         const mergedSnapshots = mergeSnapshots(driveSnapshots, parsedLocalSnapshots);
-        if (mergedSnapshots && mergedSnapshots.length > 0) {
+        if (driveSnapshots || mergedSnapshots !== parsedLocalSnapshots) {
           setSnapshots(mergedSnapshots);
-          if (parsedLocalSnapshots) await syncToDrive('post_snapshots', mergedSnapshots);
+          if (!driveSnapshots && parsedLocalSnapshots) await syncToDrive('post_snapshots', mergedSnapshots);
         }
 
       } catch (e) {

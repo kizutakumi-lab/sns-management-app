@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readJsonFile, writeJsonFile } from "@/lib/drive";
+import { getNotesFromSheet, saveNoteToSheet } from "@/lib/sheets";
 import { revalidatePath } from "next/cache";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,17 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "accountId is required" }, { status: 400 });
     }
 
-    const notes = (await readJsonFile("notes.json")) || {};
-    let accountNotes = notes[accountId];
-
-    // マイグレーション: 文字列だった場合は配列に変換
-    if (typeof accountNotes === 'string') {
-      accountNotes = [{
-        id: 'legacy-' + Date.now(),
-        timestamp: new Date().toISOString(),
-        content: accountNotes
-      }];
-    }
+    const accountNotes = await getNotesFromSheet(accountId);
 
     return NextResponse.json({ notes: accountNotes || [] });
   } catch (error: any) {
@@ -38,27 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "accountId and block are required" }, { status: 400 });
     }
 
-    const notes = (await readJsonFile("notes.json")) || {};
-    let accountNotes = notes[accountId];
-
-    if (typeof accountNotes === 'string') {
-      accountNotes = [{
-        id: 'legacy-' + Date.now(),
-        timestamp: new Date().toISOString(),
-        content: accountNotes
-      }];
-    } else if (!Array.isArray(accountNotes)) {
-      accountNotes = [];
-    }
-    
-    // 同じIDの古いノートがあれば削除（更新用）
-    accountNotes = accountNotes.filter((n: any) => n.id !== block.id);
-    
-    // 最新のものを先頭に追加 (unshift)
-    accountNotes.unshift(block);
-    notes[accountId] = accountNotes;
-
-    await writeJsonFile("notes.json", notes);
+    await saveNoteToSheet(accountId, block);
     revalidatePath("/", "layout");
 
     return NextResponse.json({ success: true });
