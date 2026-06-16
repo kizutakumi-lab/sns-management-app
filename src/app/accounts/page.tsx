@@ -4,6 +4,8 @@ import { Users, Building2, BarChart3, Activity, ArrowUpRight, ArrowDownRight } f
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AccountsPage() {
   let accounts = [];
   let posts = [];

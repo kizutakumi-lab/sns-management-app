@@ -117,7 +117,10 @@ export async function POST(request: Request) {
     await writeJsonFile("import_logs.json", logs);
 
     // インポートが成功したら、キャッシュを破棄して最新データを反映させる
+    const { revalidateTag, revalidatePath } = require("next/cache");
+    revalidateTag("drive-data");
     revalidatePath("/", "layout");
+    revalidatePath("/accounts");
 
     return NextResponse.json({ success: true, processed: data.length });
   } catch (error: any) {
