@@ -172,39 +172,38 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
 
   return (
     <Card className="h-full flex flex-col border-none shadow-none bg-transparent overflow-hidden">
-      <CardHeader className="px-0 pt-0 pb-4 shrink-0">
-        <div className="flex flex-col gap-4">
+      <CardHeader className="px-0 pt-0 pb-2 shrink-0">
+        <div className="flex flex-col gap-2">
           <div className="flex justify-between items-start">
             <div>
-              <CardTitle className="text-2xl">{accountName} - MTGメモ＆TODO</CardTitle>
-              <CardDescription className="mt-1">
-                複数人で同時に記録できます。スタンプを押して「誰の発言・タスクか」を明記し、送信してください。
+              <CardTitle className="text-lg md:text-xl font-bold">{accountName} - MTGメモ＆TODO</CardTitle>
+              <CardDescription className="mt-0.5 text-xs">
+                複数人で同時に記録できます。スタンプで発言者を明記してください。
               </CardDescription>
             </div>
-            <Button variant="ghost" size="sm" onClick={fetchLatestNotes} className="text-muted-foreground gap-1">
-              <RefreshCw className="w-4 h-4" />
+            <Button variant="ghost" size="sm" onClick={fetchLatestNotes} className="text-muted-foreground gap-1 h-7 text-xs px-2">
+              <RefreshCw className="w-3 h-3" />
               更新
             </Button>
           </div>
 
           {/* 参加者管理 */}
-          <div className="bg-muted/30 p-3 rounded-lg border flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">参加者:</span>
-              <div className="flex flex-wrap gap-2 flex-1">
+          <div className="bg-muted/30 p-2 rounded-lg border flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <div className="flex items-center gap-1.5 flex-1 w-full">
+              <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">参加者:</span>
+              <div className="flex flex-wrap gap-1.5 flex-1">
                 {participants.map((p) => (
                   <div key={p} className="flex items-center group relative">
                     <Button 
                       variant="secondary" 
-                      size="sm" 
                       onClick={() => insertStamp(p)}
-                      className="rounded-r-none border-r-0 h-8"
+                      className="rounded-r-none border-r-0 h-7 text-xs px-2"
                     >
                       {p}
                     </Button>
                     <button 
                       onClick={() => removeParticipant(p)}
-                      className="h-8 px-2 bg-secondary text-secondary-foreground rounded-r-md border border-l-0 border-secondary hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                      className="h-7 px-1.5 bg-secondary text-secondary-foreground rounded-r-md border border-l-0 border-secondary hover:bg-destructive hover:text-destructive-foreground transition-colors text-xs flex items-center"
                       title="削除"
                     >
                       ×
@@ -212,22 +211,22 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
                   </div>
                 ))}
                 {participants.length === 0 && (
-                  <span className="text-sm text-muted-foreground flex items-center h-8">
-                    名前を追加してスタンプを作成できます
+                  <span className="text-xs text-muted-foreground flex items-center h-7">
+                    名前を追加してスタンプを作成
                   </span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 w-full max-w-sm">
+            <div className="flex items-center gap-1.5 w-full sm:max-w-[180px] shrink-0">
               <input 
                 type="text" 
                 value={newParticipant}
                 onChange={(e) => setNewParticipant(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addParticipant()}
-                placeholder="例: 山田太郎" 
-                className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                placeholder="例: 山田" 
+                className="flex h-7 w-full rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
-              <Button size="sm" variant="outline" onClick={addParticipant} className="h-8 gap-1">
+              <Button variant="outline" onClick={addParticipant} className="h-7 px-2 gap-1 text-xs">
                 <UserPlus className="w-3 h-3" />
                 追加
               </Button>
@@ -237,7 +236,7 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
       </CardHeader>
 
       {/* 投稿フォーム */}
-      <div className="px-0 pb-4 shrink-0">
+      <div className="px-0 pb-2 shrink-0">
         {editingNoteId && (
           <div className="flex items-center justify-between bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-t-md border border-b-0 border-primary/20">
             <span className="font-medium">既存のメモを編集中 (送信すると最新の日付で一番上に移動します)</span>

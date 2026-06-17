@@ -196,6 +196,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     if (isMappingUpdated) {
       setMappings(currentMappings);
+      syncToDrive('mappings', currentMappings);
     }
   };
 
@@ -244,35 +245,30 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const mergedPosts = mergeData(drivePosts, localPosts);
         if (drivePosts || mergedPosts !== localPosts) {
           setPosts(mergedPosts);
-          if (!drivePosts && localPosts) await syncToDrive('posts', mergedPosts);
         }
 
         const driveCampaigns = await fetchDriveData('campaigns');
         const mergedCampaigns = mergeData(driveCampaigns, localCampaigns);
         if (driveCampaigns || mergedCampaigns !== localCampaigns) {
           setCampaigns(mergedCampaigns);
-          if (!driveCampaigns && localCampaigns) await syncToDrive('campaigns', mergedCampaigns);
         }
         
         const driveSummaries = await fetchDriveData('summaries');
         const mergedSummaries = mergeData(driveSummaries, localSummaries);
         if (driveSummaries || mergedSummaries !== localSummaries) {
           setSummaries(mergedSummaries);
-          if (!driveSummaries && localSummaries) await syncToDrive('summaries', mergedSummaries);
         }
 
         const driveMappings = await fetchDriveData('mappings');
         const mergedMappings = mergeData(driveMappings, localMappings);
         if (driveMappings || mergedMappings !== localMappings) {
           setMappings(mergedMappings);
-          if (!driveMappings && localMappings) await syncToDrive('mappings', mergedMappings);
         }
 
         const drivePostTags = await fetchDriveData('postTags');
         const mergedPostTags = mergeData(drivePostTags, localPostTags);
         if (drivePostTags || mergedPostTags !== localPostTags) {
           setPostTags(mergedPostTags);
-          if (!drivePostTags && localPostTags) await syncToDrive('postTags', mergedPostTags);
         }
 
         const driveSnapshots = await fetchDriveData('post_snapshots');
@@ -291,7 +287,6 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         const mergedSnapshots = mergeSnapshots(driveSnapshots, parsedLocalSnapshots);
         if (driveSnapshots || mergedSnapshots !== parsedLocalSnapshots) {
           setSnapshots(mergedSnapshots);
-          if (!driveSnapshots && parsedLocalSnapshots) await syncToDrive('post_snapshots', mergedSnapshots);
         }
 
       } catch (e) {
@@ -323,32 +318,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     saveToLocal('sns_campaigns', campaigns);
     saveToLocal('sns_summaries', summaries);
     saveToLocal('sns_mappings', mappings);
+    saveToLocal('sns_snapshots', snapshots);
 
-    // Google Drive への同期はデバウンスし、変更があったものだけ送る
-    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-    
-    syncTimeoutRef.current = setTimeout(() => {
-      const prev = prevDataRef.current;
-      
-      if (prev.posts !== posts) {
-        syncToDrive('posts', posts);
-      }
-      if (prev.campaigns !== campaigns) {
-        syncToDrive('campaigns', campaigns);
-      }
-      if (prev.summaries !== summaries) {
-        syncToDrive('summaries', summaries);
-      }
-      if (prev.mappings !== mappings) {
-        syncToDrive('mappings', mappings);
-      }
-      if (prev.snapshots !== snapshots) {
-        syncToDrive('post_snapshots', snapshots);
-      }
-      
-      // 今回のデータを次回比較用に保存
-      prevDataRef.current = { posts, campaigns, summaries, mappings, snapshots };
-    }, 2000);
+    // 古いローカルキャッシュでのDrive上書き事故を防ぐため、Driveへの自動同期は廃止
+    // ※タグやマッピングの保存は、それぞれの更新関数内で明示的に行う
   }, [posts, campaigns, summaries, mappings, snapshots]);
 
   // 分析済み投稿データの構築（useMemoで同期的に計算し、不要な再描画を防ぐ）
