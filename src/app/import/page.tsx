@@ -45,6 +45,14 @@ export default function ImportPage() {
 
         if (file.name.includes('posts')) {
           const parsed = await parsePostsCSV(file);
+          
+          // APIに送信してDriveに保存
+          await fetch('/api/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'posts', data: parsed })
+          });
+
           setPosts((prev: any) => {
             const map = new Map();
             (prev || []).forEach((p: any) => map.set(p.id, p));
@@ -52,7 +60,6 @@ export default function ImportPage() {
             return Array.from(map.values());
           });
           
-          // スナップショットの生成と追加
           const today = new Date().toISOString().split('T')[0];
           const newSnapshots = parsed.map((p: any) => ({
             postId: p.id,
@@ -76,6 +83,14 @@ export default function ImportPage() {
           count = parsed.length;
         } else if (file.name.includes('summary')) {
           const parsed = await parseSummaryCSV(file);
+          
+          // APIに送信してDriveに保存
+          await fetch('/api/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'summary', data: parsed })
+          });
+
           setSummaries((prev: any) => {
             const map = new Map();
             (prev || []).forEach((p: any) => {
@@ -92,6 +107,13 @@ export default function ImportPage() {
           count = parsed.length;
         } else if (file.name.endsWith('.xlsx')) {
           const parsed = await parseAdExcel(file);
+          
+          await fetch('/api/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'campaigns', data: parsed })
+          });
+
           setCampaigns((prev: any) => {
             const map = new Map();
             (prev || []).forEach((p: any) => map.set(p.id, p));
