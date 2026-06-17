@@ -12,12 +12,44 @@ export async function POST(request: Request) {
     }
 
     if (type === "summary") {
-      // Handle summary data import
-      // Map to post_snapshots or accounts snapshot
-      // For now, we'll just store it in a generic snapshots file to build out the MVP
       const existing = await readJsonFile("summaries.json") || [];
-      const updated = [...existing, ...data];
-      await writeJsonFile("summaries.json", updated);
+      const existingAccounts = await readJsonFile("accounts.json") || [];
+      const accountsMap = new Map<string, any>(existingAccounts.map((a: any) => [a.id, a]));
+      
+      const summaryMap = new Map<string, any>();
+      existing.forEach((s: any) => {
+        if (s.authorId && s.date) summaryMap.set(`${s.authorId}_${s.date}`, s);
+      });
+
+      data.forEach((row: any) => {
+        if (!row.date || !row.authorId) return;
+
+        let normalizedDate = row.date;
+        try {
+          const d = new Date(row.date);
+          if (!isNaN(d.getTime())) {
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            normalizedDate = `${yyyy}/${mm}/${dd}`;
+          }
+        } catch (e) {}
+
+        const newSummary = { ...row, date: normalizedDate };
+        summaryMap.set(`${row.authorId}_${normalizedDate}`, newSummary);
+
+        if (accountsMap.has(row.authorId)) {
+          const acc = accountsMap.get(row.authorId);
+          const sumDateMs = new Date(normalizedDate).getTime();
+          if (sumDateMs > (acc._lastSummaryDateMs || 0)) {
+            acc.followers = Math.max(acc.followers || 0, row.followers || 0);
+            acc._lastSummaryDateMs = sumDateMs;
+          }
+        }
+      });
+
+      await writeJsonFile("summaries.json", Array.from(summaryMap.values()));
+      await writeJsonFile("accounts.json", Array.from(accountsMap.values()));
 
     } else if (type === "posts") {
       // Handle posts data import
