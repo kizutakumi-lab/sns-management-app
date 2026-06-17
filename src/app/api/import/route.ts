@@ -15,9 +15,9 @@ export async function POST(request: Request) {
       // Handle summary data import
       // Map to post_snapshots or accounts snapshot
       // For now, we'll just store it in a generic snapshots file to build out the MVP
-      const existing = await readJsonFile("account_summary.json") || [];
+      const existing = await readJsonFile("summaries.json") || [];
       const updated = [...existing, ...data];
-      await writeJsonFile("account_summary.json", updated);
+      await writeJsonFile("summaries.json", updated);
 
     } else if (type === "posts") {
       // Handle posts data import
