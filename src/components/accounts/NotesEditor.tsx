@@ -36,7 +36,7 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
-        const res = await fetch("/api/notes/participants");
+        const res = await fetch(`/api/notes/participants?t=${Date.now()}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data.participants) setParticipants(data.participants);
@@ -64,7 +64,7 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
   // ポーリングで最新のノートを取得
   const fetchLatestNotes = async () => {
     try {
-      const res = await fetch(`/api/notes?accountId=${accountId}`);
+      const res = await fetch(`/api/notes?accountId=${accountId}&t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         if (data.notes) {
