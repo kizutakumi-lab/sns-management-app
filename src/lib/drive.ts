@@ -1,5 +1,4 @@
 import { google } from 'googleapis';
-import { Readable } from 'stream';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/drive.file', 
@@ -107,7 +106,7 @@ export async function writeJsonFile(fileName: string, data: any) {
 
   const media = {
     mimeType: 'application/json',
-    body: Readable.from([fileContent]),
+    body: fileContent,
   };
 
   if (existingFile && existingFile.id) {
