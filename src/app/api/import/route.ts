@@ -65,23 +65,24 @@ export async function POST(request: Request) {
       const today = new Date().toISOString().split('T')[0];
 
       data.forEach((row: any) => {
-        if (!row['投稿ID'] && !row['詳細URL']) return;
+        if (!row.id && !row.url) return;
         
-        const postId = row['投稿ID'] || row['詳細URL'];
+        const postId = row.id || row.url;
         
         // Extract account info
-        const authorId = row['ユーザーID'] || 'unknown';
-        const authorUsername = row['ユーザーネーム'] || 'unknown';
-        const authorName = row['名前'] || '不明なアカウント';
+        const authorId = row.authorId || 'unknown';
+        // authorUsername and authorName are not parsed by parser.ts so they might be missing or we use defaults
+        const authorUsername = 'unknown'; 
+        const authorName = '不明なアカウント';
         
-        const postDateMs = new Date(row['投稿時間'] || 0).getTime();
+        const postDateMs = new Date(row.postTime || 0).getTime();
         
         if (!accountsMap.has(authorId)) {
           accountsMap.set(authorId, {
             id: authorId,
             username: authorUsername,
             name: authorName,
-            followers: parseInt(row['フォロワー数'] || '0') || 0,
+            followers: 0, // Not available in posts CSV anyway
             lastImportedAt: today,
             _lastPostDateMs: postDateMs
           });
@@ -89,7 +90,6 @@ export async function POST(request: Request) {
           // Update followers only if this row is newer
           const acc = accountsMap.get(authorId);
           if (postDateMs > (acc._lastPostDateMs || 0)) {
-            acc.followers = parseInt(row['フォロワー数'] || '0') || acc.followers;
             acc._lastPostDateMs = postDateMs;
           }
           acc.lastImportedAt = today;
@@ -97,22 +97,22 @@ export async function POST(request: Request) {
 
         // Parse metrics data
         const postData = {
-          impressions: parseInt(row['表示回数'] || '0') || 0,
-          likes: parseInt(row['いいね数'] || '0') || 0,
-          reposts: parseInt(row['リポスト(合計)'] || '0') || 0,
-          replies: parseInt(row['リプライ数'] || '0') || 0,
-          bookmarks: parseInt(row['ブックマーク数'] || '0') || 0,
-          engagementRate: parseFloat(row['エンゲージメント率'] || '0') || 0,
-          linkClicks: parseInt(row['リンククリック数'] || '0') || 0,
+          impressions: row.impressions || 0,
+          likes: row.likes || 0,
+          reposts: row.reposts || 0,
+          replies: row.replies || 0,
+          bookmarks: row.bookmarks || 0,
+          engagementRate: row.engagementRate || 0,
+          linkClicks: row.linkClicks || 0,
         };
 
         // Find existing post or create new
         if (!postsMap.has(postId)) {
           postsMap.set(postId, {
             id: postId,
-            url: row['詳細URL'] || '',
-            postTime: row['投稿時間'] || '',
-            text: row['内容'] || '',
+            url: row.url || '',
+            postTime: row.postTime || '',
+            text: row.text || '',
             authorId,
             authorUsername,
             authorName,
@@ -138,12 +138,12 @@ export async function POST(request: Request) {
         newSnapshots.push({
           postId: postId,
           date: today,
-          impressions: parseInt(row['表示回数'] || '0') || 0,
-          likes: parseInt(row['いいね数'] || '0') || 0,
-          reposts: parseInt(row['リポスト(合計)'] || '0') || 0,
-          replies: parseInt(row['リプライ数'] || '0') || 0,
-          bookmarks: parseInt(row['ブックマーク数'] || '0') || 0,
-          engagementRate: row['エンゲージメント率'] || '0%',
+          impressions: row.impressions || 0,
+          likes: row.likes || 0,
+          reposts: row.reposts || 0,
+          replies: row.replies || 0,
+          bookmarks: row.bookmarks || 0,
+          engagementRate: row.engagementRate || 0,
         });
       });
 
