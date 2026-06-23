@@ -227,7 +227,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // 2. Google Driveから最新データを取得
       try {
         const fetchDriveData = async (key: string) => {
-          const res = await fetch(`/api/drive?key=${key}`);
+          const res = await fetch(`/api/drive?key=${key}&t=${Date.now()}`, { cache: 'no-store' });
           if (res.ok) {
             const data = await res.json();
             return (Array.isArray(data) && data.length > 0) || (typeof data === 'object' && Object.keys(data).length > 0) ? data : null;

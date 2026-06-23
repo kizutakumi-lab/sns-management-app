@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       const existingAccounts = await readJsonFile("accounts.json") || [];
 
       // Deduplicate and process posts
-      const newPosts: any[] = [];
+      const postsMap = new Map<string, any>(existingPosts.map((p: any) => [p.id, p]));
       const newSnapshots: any[] = [];
       const accountsMap = new Map<string, any>(existingAccounts.map((a: any) => [a.id, a]));
       
@@ -95,14 +95,24 @@ export async function POST(request: Request) {
           acc.lastImportedAt = today;
         }
 
-        // Find existing post
-        const exists = existingPosts.find((p: any) => p.id === postId);
-        if (!exists) {
-          newPosts.push({
+        // Parse metrics data
+        const postData = {
+          impressions: parseInt(row['表示回数'] || '0') || 0,
+          likes: parseInt(row['いいね数'] || '0') || 0,
+          reposts: parseInt(row['リポスト(合計)'] || '0') || 0,
+          replies: parseInt(row['リプライ数'] || '0') || 0,
+          bookmarks: parseInt(row['ブックマーク数'] || '0') || 0,
+          engagementRate: parseFloat(row['エンゲージメント率'] || '0') || 0,
+          linkClicks: parseInt(row['リンククリック数'] || '0') || 0,
+        };
+
+        // Find existing post or create new
+        if (!postsMap.has(postId)) {
+          postsMap.set(postId, {
             id: postId,
             url: row['詳細URL'] || '',
-            postedAt: row['投稿時間'] || '',
-            content: row['内容'] || '',
+            postTime: row['投稿時間'] || '',
+            text: row['内容'] || '',
             authorId,
             authorUsername,
             authorName,
@@ -110,7 +120,17 @@ export async function POST(request: Request) {
             memo: '',
             purpose: '',
             creativeType: '',
-            evaluation: '未評価'
+            evaluation: '未評価',
+            ...postData
+          });
+        } else {
+          const existing = postsMap.get(postId);
+          postsMap.set(postId, {
+            ...existing,
+            ...postData,
+            authorId: existing.authorId || authorId,
+            authorUsername: existing.authorUsername || authorUsername,
+            authorName: existing.authorName || authorName
           });
         }
 
@@ -131,9 +151,7 @@ export async function POST(request: Request) {
       await writeJsonFile("accounts.json", Array.from(accountsMap.values()));
 
       // Update files
-      if (newPosts.length > 0) {
-        await writeJsonFile("posts.json", [...existingPosts, ...newPosts]);
-      }
+      await writeJsonFile("posts.json", Array.from(postsMap.values()));
       
       // Update snapshots
       await writeJsonFile("post_snapshots.json", [...existingSnapshots, ...newSnapshots]);
