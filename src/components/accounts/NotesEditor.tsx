@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { ja } from "date-fns/locale";
-import { Send, UserPlus, AlertCircle, RefreshCw, Edit2, X } from "lucide-react";
+import { Send, UserPlus, AlertCircle, RefreshCw, Pencil, Trash2, X } from "lucide-react";
 
 export interface NoteBlock {
   id: string;
@@ -151,6 +151,25 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm("本当に削除しますか？")) return;
+    try {
+      const res = await fetch("/api/notes", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId, noteId: id }),
+      });
+      if (res.ok) {
+        setNotes((prev) => prev.filter((n) => n.id !== id));
+      } else {
+        alert("削除に失敗しました");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("削除に失敗しました");
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Ctrl+Enter or Cmd+Enter で送信
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
@@ -277,10 +296,26 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
                   <span className="text-xs text-muted-foreground font-medium bg-background px-2 py-1 rounded border shadow-sm">
                     {format(new Date(note.timestamp), "yyyy/MM/dd HH:mm", { locale: ja })}
                   </span>
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(note)} className="h-7 text-xs text-muted-foreground hover:text-primary">
-                    <Edit2 className="w-3 h-3 mr-1" />
-                    編集
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(note)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="w-3 h-3 mr-1" />
+                      編集
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(note.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-3 h-3 mr-1" />
+                      削除
+                    </Button>
+                  </div>
                 </div>
                 <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground font-mono">
                   {note.content}

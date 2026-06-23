@@ -124,6 +124,34 @@ export async function saveNoteToSheet(accountId: string, noteBlock: any) {
   }
 }
 
+export async function deleteNoteFromSheet(accountId: string, noteId: string) {
+  const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
+  if (!spreadsheetId) throw new Error('GOOGLE_SPREADSHEET_ID is not set');
+
+  const sheets = await getSheetsService();
+  
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: 'MTGNotes!A:B', // AccountId と NoteId
+  });
+  
+  const rows = res.data.values || [];
+  let rowIndex = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (rows[i][0] === accountId && rows[i][1] === noteId) {
+      rowIndex = i + 1; // 1-indexed
+      break;
+    }
+  }
+
+  if (rowIndex !== -1) {
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId,
+      range: `MTGNotes!A${rowIndex}:D${rowIndex}`,
+    });
+  }
+}
+
 // --- Participants の読み書き ---
 // シート構造: [Key (固定), Participants (JSON)]
 export async function getParticipantsFromSheet() {

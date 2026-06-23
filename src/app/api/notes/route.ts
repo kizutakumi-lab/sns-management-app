@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNotesFromSheet, saveNoteToSheet } from "@/lib/sheets";
+import { getNotesFromSheet, saveNoteToSheet, deleteNoteFromSheet } from "@/lib/sheets";
 import { revalidatePath } from "next/cache";
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +38,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Failed to save note:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { accountId, noteId } = await req.json();
+
+    if (!accountId || !noteId) {
+      return NextResponse.json({ error: "accountId and noteId are required" }, { status: 400 });
+    }
+
+    await deleteNoteFromSheet(accountId, noteId);
+    revalidatePath("/", "layout");
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Failed to delete note:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
