@@ -117,7 +117,6 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
   const handleSend = async () => {
     if (!content.trim()) return;
 
-    setIsSaving(true);
     const newBlock: NoteBlock = {
       id: editingNoteId || crypto.randomUUID(),
       timestamp: new Date().toISOString(),
@@ -125,7 +124,12 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
     };
 
     // UIを即時更新（楽観的UI更新：古いものを消して先頭に）
-    setNotes((prev) => [newBlock, ...prev.filter(n => n.id !== newBlock.id)]);
+    setNotes((prev) => [newBlock, ...prev.filter(n => n.id !== newBlock.id)].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+    
+    // バックアップを取ってから入力欄をクリア
+    const backupContent = content;
+    const backupEditingId = editingNoteId;
+    
     setContent("");
     setEditingNoteId(null);
 
@@ -136,18 +140,16 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
         body: JSON.stringify({ accountId, block: newBlock }),
       });
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to save");
+        throw new Error("Failed to save");
       }
-      // 再取得して同期を確実にする
+      // バックグラウンドで同期
       fetchLatestNotes();
     } catch (e: any) {
       console.error(e);
-      // エラー時はフェッチして元に戻す
+      setContent(backupContent);
+      setEditingNoteId(backupEditingId);
       fetchLatestNotes();
       alert(`送信に失敗しました: ${e.message}`);
-    } finally {
-      setIsSaving(false);
     }
   };
 
