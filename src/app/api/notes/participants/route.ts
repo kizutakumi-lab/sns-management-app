@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readJsonFile, writeJsonFile } from "@/lib/drive";
+import { getParticipantsFromSheet, saveParticipantsToSheet } from "@/lib/sheets";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    const participants = await readJsonFile("participants.json");
+    const participants = await getParticipantsFromSheet();
     return NextResponse.json({ participants: participants || [] });
   } catch (error: any) {
     console.error("Failed to fetch participants:", error);
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "participants must be an array" }, { status: 400 });
     }
 
-    await writeJsonFile("participants.json", participants);
+    await saveParticipantsToSheet(participants);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("Failed to save participants:", error);

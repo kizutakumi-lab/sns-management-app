@@ -136,7 +136,8 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
         body: JSON.stringify({ accountId, block: newBlock }),
       });
       if (!res.ok) {
-        throw new Error("Failed to save");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to save");
       }
       // 再取得して同期を確実にする
       fetchLatestNotes();
@@ -144,7 +145,7 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
       console.error(e);
       // エラー時はフェッチして元に戻す
       fetchLatestNotes();
-      alert("送信に失敗しました。");
+      alert(`送信に失敗しました: ${e.message}`);
     } finally {
       setIsSaving(false);
     }
