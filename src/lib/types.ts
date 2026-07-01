@@ -11,6 +11,8 @@ export interface RawPostData {
   engagementRate: number; // エンゲージメント率
   linkClicks: number; // リンククリック数
   authorId?: string; // アカウントID (推測値)
+  authorName?: string; // CSVから取得した名前
+  authorUsername?: string; // CSVから取得したユーザーネーム
 }
 
 export interface RawAdCampaign {

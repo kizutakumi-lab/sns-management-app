@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, Building2, BarChart3, Activity, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { EditAccountModal } from "@/components/accounts/EditAccountModal";
 
 export const dynamic = 'force-dynamic';
 
@@ -91,14 +92,17 @@ export default async function AccountsPage() {
           accountStats.map((acc: any) => (
             <Card key={acc.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-4 border-b">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                    <Users className="w-6 h-6 text-primary" />
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                      <Users className="w-6 h-6 text-primary" />
+                    </div>
+                    <div className="overflow-hidden">
+                      <CardTitle className="truncate text-lg">{acc.name}</CardTitle>
+                      <CardDescription className="truncate mt-1">@{acc.username}</CardDescription>
+                    </div>
                   </div>
-                  <div className="overflow-hidden">
-                    <CardTitle className="truncate text-lg">{acc.name}</CardTitle>
-                    <CardDescription className="truncate mt-1">@{acc.username}</CardDescription>
-                  </div>
+                  <EditAccountModal account={acc} />
                 </div>
               </CardHeader>
               <CardContent className="pt-4">

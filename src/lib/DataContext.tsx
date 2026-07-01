@@ -363,23 +363,36 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       // 手動で設定されたタグ（postTags）を優先。なければ空の配列
       const categories: string[] = [...((postTags || {})[post.id] || [])];
 
-      // アカウント判別による必須タグの自動付与
-      if (post.authorId) {
+      // アカウント判別による必須タグの自動付与（動的対応）
+      if (post.authorName && post.authorName !== '不明なアカウント' && post.authorName !== 'unknown') {
+        // 「ハチエモン【公式】」のような装飾を取り除いてタグ化
+        const cleanName = post.authorName.split(/【|＠|@|（|\(/)[0].trim();
+        if (cleanName) {
+          categories.push(cleanName);
+        }
+      } else if (post.authorId && post.authorId !== 'unknown') {
+        // authorNameがない古いデータのフォールバック
         if (post.authorId.includes('ハチエモン') || post.authorId === 'hachiemon_x' || post.authorId === '1940676270360350722') {
           categories.push('ハチエモン');
-        }
-        if (post.authorId.includes('ジョーくん') || post.authorId === 'joekun_ichijo' || post.authorId === '1457962651448143873') {
+        } else if (post.authorId.includes('ジョーくん') || post.authorId === 'joekun_ichijo' || post.authorId === '1457962651448143873') {
           categories.push('ジョーくん');
+        } else if (post.authorId.includes('ぷよ')) {
+          categories.push('ぷよぷよ');
+        } else {
+          categories.push(post.authorId);
         }
       }
 
       if (!(postTags || {})[post.id]) {
-        // authorIdから判定できなかった場合のフォールバック
+        // 本文からのフォールバック判定
         if (!categories.includes('ハチエモン') && (post.text?.includes('ハチエモン') || post.text?.includes('ハチえもん'))) {
           categories.push('ハチエモン');
         }
         if (!categories.includes('ジョーくん') && (post.text?.includes('ジョーくん') || post.text?.includes('ジョー君'))) {
           categories.push('ジョーくん');
+        }
+        if (!categories.includes('ぷよぷよ') && !categories.includes('みどりぷよ') && (post.text?.includes('ぷよぷよ') || post.text?.includes('みどりぷよ'))) {
+          categories.push('ぷよぷよ');
         }
 
         if (post.text?.includes('プレゼント') || post.text?.includes('キャンペーン') || post.text?.includes('プレキャン')) categories.push('プレキャン');

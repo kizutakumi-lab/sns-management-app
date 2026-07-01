@@ -71,9 +71,10 @@ export async function POST(request: Request) {
         
         // Extract account info
         const authorId = row.authorId || 'unknown';
-        // authorUsername and authorName are not parsed by parser.ts so they might be missing or we use defaults
-        const authorUsername = 'unknown'; 
-        const authorName = '不明なアカウント';
+        
+        // CSVに直接名前やユーザーネームがある場合はそれを優先、なければauthorIdをフォールバックとして使う
+        const authorUsername = row.authorUsername || (authorId !== 'unknown' ? authorId : 'unknown'); 
+        const authorName = row.authorName || (authorId !== 'unknown' ? authorId : '不明なアカウント');
         
         const postDateMs = new Date(row.postTime || 0).getTime();
         

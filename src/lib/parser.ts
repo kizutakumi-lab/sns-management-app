@@ -28,7 +28,7 @@ export const parsePostsCSV = async (file: File): Promise<RawPostData[]> => {
           const fallbackAuthorId = match ? match[1] : undefined;
 
           const posts = results.data.map((row: any) => {
-            const url = row['詳細URL'] || row['ポストのURL'] || row['URL'] || '';
+            const url = row['詳細URL'] || row['ポストのURL'] || row['URL'] || row['Tweet permalink'] || row['Permalink'] || '';
             let authorId = fallbackAuthorId;
             
             // URLから X (Twitter) のユーザー名を抽出 (例: https://x.com/username/status/...)
@@ -38,9 +38,15 @@ export const parsePostsCSV = async (file: File): Promise<RawPostData[]> => {
                 authorId = urlMatch[1];
               }
             }
+            // CSVにユーザーネームや名前の列があれば優先して使う
+            if (row['ユーザーネーム']) {
+              authorId = row['ユーザーネーム'];
+            }
 
             return {
               id: row['投稿ID'] || row['ポストID'] || row['Tweet id'],
+              authorName: row['名前'] || '',
+              authorUsername: row['ユーザーネーム'] || '',
               postTime: row['投稿時間'] || row['日付'] || row['time'],
               text: row['内容'] || row['ポスト本文'] || row['Tweet text'],
               url: url,
