@@ -16,6 +16,12 @@ export async function POST(request: Request) {
       const existingAccounts = await readJsonFile("accounts.json") || [];
       const accountsMap = new Map<string, any>(existingAccounts.map((a: any) => [a.id, a]));
       
+      // Username -> Account map for resolving numeric vs string ID mismatches
+      const accountsByUsername = new Map<string, any>();
+      existingAccounts.forEach((a: any) => {
+        if (a.username) accountsByUsername.set(a.username.replace('@', ''), a);
+      });
+      
       const summaryMap = new Map<string, any>();
       existing.forEach((s: any) => {
         if (s.authorId && s.date) summaryMap.set(`${s.authorId}_${s.date}`, s);
@@ -23,6 +29,15 @@ export async function POST(request: Request) {
 
       data.forEach((row: any) => {
         if (!row.date || !row.authorId) return;
+        
+        let finalAccountId = row.authorId;
+        if (!accountsMap.has(row.authorId)) {
+          // If ID not found, try to match by username (authorId from summary is often the username)
+          const cleanUsername = row.authorId.replace('@', '');
+          if (accountsByUsername.has(cleanUsername)) {
+            finalAccountId = accountsByUsername.get(cleanUsername).id;
+          }
+        }
 
         let normalizedDate = row.date;
         try {
@@ -35,11 +50,11 @@ export async function POST(request: Request) {
           }
         } catch (e) {}
 
-        const newSummary = { ...row, date: normalizedDate };
-        summaryMap.set(`${row.authorId}_${normalizedDate}`, newSummary);
+        const newSummary = { ...row, date: normalizedDate, authorId: finalAccountId };
+        summaryMap.set(`${finalAccountId}_${normalizedDate}`, newSummary);
 
-        if (accountsMap.has(row.authorId)) {
-          const acc = accountsMap.get(row.authorId);
+        if (accountsMap.has(finalAccountId)) {
+          const acc = accountsMap.get(finalAccountId);
           const sumDateMs = new Date(normalizedDate).getTime();
           if (sumDateMs > (acc._lastSummaryDateMs || 0)) {
             acc.followers = Math.max(acc.followers || 0, row.followers || 0);
@@ -62,6 +77,11 @@ export async function POST(request: Request) {
       const newSnapshots: any[] = [];
       const accountsMap = new Map<string, any>(existingAccounts.map((a: any) => [a.id, a]));
       
+      const accountsByUsername = new Map<string, any>();
+      existingAccounts.forEach((a: any) => {
+        if (a.username) accountsByUsername.set(a.username.replace('@', ''), a);
+      });
+      
       const today = new Date().toISOString().split('T')[0];
 
       data.forEach((row: any) => {
@@ -73,14 +93,19 @@ export async function POST(request: Request) {
         const authorId = row.authorId || 'unknown';
         
         // CSVに直接名前やユーザーネームがある場合はそれを優先、なければauthorIdをフォールバックとして使う
-        const authorUsername = row.authorUsername || (authorId !== 'unknown' ? authorId : 'unknown'); 
+        const authorUsername = row.authorUsername ? row.authorUsername.replace('@', '') : (authorId !== 'unknown' ? authorId : 'unknown'); 
         const authorName = row.authorName || (authorId !== 'unknown' ? authorId : '不明なアカウント');
         
         const postDateMs = new Date(row.postTime || 0).getTime();
         
-        if (!accountsMap.has(authorId)) {
-          accountsMap.set(authorId, {
-            id: authorId,
+        let finalAccountId = authorId;
+        if (!accountsMap.has(authorId) && accountsByUsername.has(authorUsername)) {
+          finalAccountId = accountsByUsername.get(authorUsername).id;
+        }
+
+        if (!accountsMap.has(finalAccountId)) {
+          accountsMap.set(finalAccountId, {
+            id: finalAccountId,
             username: authorUsername,
             name: authorName,
             followers: 0, // Not available in posts CSV anyway
@@ -89,7 +114,7 @@ export async function POST(request: Request) {
           });
         } else {
           // Update followers only if this row is newer
-          const acc = accountsMap.get(authorId);
+          const acc = accountsMap.get(finalAccountId);
           if (postDateMs > (acc._lastPostDateMs || 0)) {
             acc._lastPostDateMs = postDateMs;
           }
@@ -114,7 +139,7 @@ export async function POST(request: Request) {
             url: row.url || '',
             postTime: row.postTime || '',
             text: row.text || '',
-            authorId,
+            authorId: finalAccountId,
             authorUsername,
             authorName,
             tags: [],
@@ -129,7 +154,7 @@ export async function POST(request: Request) {
           postsMap.set(postId, {
             ...existing,
             ...postData,
-            authorId: existing.authorId || authorId,
+            authorId: finalAccountId,
             authorUsername: existing.authorUsername || authorUsername,
             authorName: existing.authorName || authorName
           });
