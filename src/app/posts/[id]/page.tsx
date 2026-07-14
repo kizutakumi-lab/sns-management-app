@@ -240,7 +240,7 @@ export default function PostDetailPage() {
                     <RechartsTooltip 
                       contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '8px' }}
                       itemStyle={{ color: '#fff' }}
-                      formatter={(value: number) => value.toLocaleString()}
+                      formatter={(value: any) => typeof value === 'number' ? value.toLocaleString() : value}
                     />
                     <Legend />
                     <Line yAxisId="left" type="monotone" dataKey="imp" name="表示回数 (IMP)" stroke="#3b82f6" activeDot={{ r: 8 }} strokeWidth={2} />
