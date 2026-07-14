@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

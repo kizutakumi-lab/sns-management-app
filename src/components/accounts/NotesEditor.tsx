@@ -77,6 +77,9 @@ export function NotesEditor({ accountId, accountName, initialNotes }: NotesEdito
   };
 
   useEffect(() => {
+    // 初回マウント時にも最新を取得
+    fetchLatestNotes();
+    
     // 10秒ごとに最新データを取得
     const interval = setInterval(fetchLatestNotes, 10000);
     return () => clearInterval(interval);

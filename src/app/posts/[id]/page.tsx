@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowLeft, MessageSquare, Calendar, ExternalLink } from "lucide-react"
 import { useParams } from "next/navigation"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts'
 
 export default function PostDetailPage() {
   const params = useParams();
   const id = params.id as string;
-  const { analyzedPosts } = useData()
+  const { analyzedPosts, snapshots } = useData()
 
   const post = analyzedPosts.find(p => p.id === id);
 
@@ -27,10 +27,17 @@ export default function PostDetailPage() {
     );
   }
 
-  // エンゲージメント率の再計算 (広告込みのエンゲージメント数が分かっている場合)
-  // 現状はオーガニックのエンゲージメント率・広告のエンゲージメント率は出せないため、
-  // 全体のエンゲージメント率のみ表示するか、計算で出すか。
-  
+  // 過去からの伸び具合（推移）データ
+  const historicalData = snapshots
+    .filter(s => s.postId === id)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .map(s => ({
+      date: s.date.replace(/^\d{4}-/, ''), // YYYY-MM-DD -> MM-DD
+      imp: s.impressions,
+      likes: s.likes,
+      reposts: s.reposts
+    }));
+
   const chartData = [
     {
       name: '表示回数',
@@ -209,6 +216,44 @@ export default function PostDetailPage() {
               <p className="text-xs text-muted-foreground mt-4 text-center">
                 ※現状、提供されている広告CSVにはインプレッション以外の指標が存在しないため、いいね等の広告指標は「0」として計算されています。今後の新しいCSVインポートにより自動反映されます。
               </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 過去からの推移グラフ */}
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle>パフォーマンス推移 (インポート毎の積み上げ)</CardTitle>
+            <CardDescription>
+              過去のCSVインポート時点からの表示回数・いいね数の伸びを確認できます。
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {historicalData.length > 1 ? (
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={historicalData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis dataKey="date" stroke="#888" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="left" stroke="#888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => val.toLocaleString()} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => val.toLocaleString()} />
+                    <RechartsTooltip 
+                      contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '8px' }}
+                      itemStyle={{ color: '#fff' }}
+                      formatter={(value: number) => value.toLocaleString()}
+                    />
+                    <Legend />
+                    <Line yAxisId="left" type="monotone" dataKey="imp" name="表示回数 (IMP)" stroke="#3b82f6" activeDot={{ r: 8 }} strokeWidth={2} />
+                    <Line yAxisId="right" type="monotone" dataKey="likes" name="いいね" stroke="#f43f5e" strokeWidth={2} />
+                    <Line yAxisId="right" type="monotone" dataKey="reposts" name="リポスト" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-muted-foreground border rounded-lg border-dashed">
+                <p>過去の推移データが不足しています。</p>
+                <p className="text-sm mt-1">複数回CSVをインポートすると、ここにグラフが表示されます。</p>
+              </div>
             )}
           </CardContent>
         </Card>

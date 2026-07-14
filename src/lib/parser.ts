@@ -43,6 +43,11 @@ export const parsePostsCSV = async (file: File): Promise<RawPostData[]> => {
               authorId = row['ユーザーネーム'];
             }
 
+            // Remove @ prefix to unify account IDs
+            if (authorId && authorId.startsWith('@')) {
+              authorId = authorId.substring(1);
+            }
+
             return {
               id: row['投稿ID'] || row['ポストID'] || row['Tweet id'],
               authorName: row['名前'] || '',
@@ -80,7 +85,12 @@ export const parseSummaryCSV = async (file: File): Promise<DailySummary[]> => {
       complete: (results) => {
         try {
           const match = file.name.match(/si__accounts-(?:posts|summary)_(.*?)(?:_\d+)?\.csv/);
-          const authorId = match ? match[1] : undefined;
+          let authorId = match ? match[1] : undefined;
+
+          // Remove @ prefix to unify account IDs
+          if (authorId && authorId.startsWith('@')) {
+            authorId = authorId.substring(1);
+          }
 
           const summaries = results.data.map((row: any) => ({
             date: row['日時'],

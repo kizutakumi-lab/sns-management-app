@@ -14,10 +14,12 @@ export default async function AccountsPage() {
   let summaries = [];
 
   try {
-    accounts = await getCachedAccounts();
-    posts = await getCachedPosts();
-    snapshots = await getCachedSnapshots();
-    summaries = await getCachedSummaries();
+    [accounts, posts, snapshots, summaries] = await Promise.all([
+      getCachedAccounts(),
+      getCachedPosts(),
+      getCachedSnapshots(),
+      getCachedSummaries()
+    ]);
   } catch (e) {
     console.error("Failed to load data", e);
   }
